@@ -935,18 +935,34 @@
         const billRaw = localStorage.getItem("shinsen_billing_history");
         const masterRaw = localStorage.getItem("shinsen_star5_master");
 
-        if (histRaw) state.history = JSON.parse(histRaw);
-        if (billRaw) state.billing = JSON.parse(billRaw);
+        if (histRaw) {
+          const parsed = JSON.parse(histRaw);
+          if (Array.isArray(parsed)) state.history = parsed;
+        }
+        if (billRaw) {
+          const parsed = JSON.parse(billRaw);
+          if (Array.isArray(parsed)) state.billing = parsed;
+        }
 
         if (masterRaw) {
-          star5Master = JSON.parse(masterRaw);
+          const parsedMaster = JSON.parse(masterRaw);
+          if (Array.isArray(parsedMaster) && parsedMaster.length > 0) {
+            // 保存済みの武将マスターをそのまま完全維持（コード更新で絶対に上書きしない）
+            star5Master = parsedMaster;
+          } else {
+            star5Master = [...DEFAULT_STAR5_MASTER];
+            saveMasterData();
+          }
         } else {
+          // 初めてアプリを開いた時のみデフォルトを設定
           star5Master = [...DEFAULT_STAR5_MASTER];
           saveMasterData();
         }
       } catch (e) {
         console.error("ストレージ読み込みエラー", e);
-        star5Master = [...DEFAULT_STAR5_MASTER];
+        if (!star5Master || star5Master.length === 0) {
+          star5Master = [...DEFAULT_STAR5_MASTER];
+        }
       }
     }
 
@@ -2465,4 +2481,3 @@
   </script>
 </body>
 </html>
-
