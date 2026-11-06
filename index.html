@@ -54,7 +54,6 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    /* iOS input zoom prevention */
     input, select, textarea {
       font-size: 16px !important;
     }
@@ -63,7 +62,6 @@
         font-size: 14px !important;
       }
     }
-    /* トースト通知 */
     #toastContainer {
       position: fixed;
       bottom: 24px;
@@ -171,7 +169,7 @@
   <main class="max-w-6xl mx-auto px-3 sm:px-4 mt-5">
 
     <!-- =========================================================
-         TAB 1: 登用登録 (手動入力を極力簡単に・ポップアップなしで即登録)
+         TAB 1: 登用登録
          ========================================================= -->
     <div id="tab-record" class="tab-pane space-y-5">
       
@@ -193,7 +191,7 @@
           <p class="text-[10px] text-stone-400 mt-2">前回★5から <span id="sinceLast5Star" class="text-stone-100 font-bold">0</span> 連経過</p>
         </div>
 
-        <!-- 低排出(裏天井)カウンター (高排出5連続で次回低排出確定) -->
+        <!-- 低排出(裏天井)カウンター -->
         <div class="bg-gradient-to-b from-stone-900 to-sengoku-panel p-3 rounded-xl border border-rose-500/40 relative overflow-hidden shadow">
           <div class="flex items-center justify-between text-[11px] text-rose-300 font-bold mb-1">
             <span>低排出(裏天井)</span>
@@ -209,7 +207,7 @@
           <p id="lowPityStatusMsg" class="text-[10px] text-stone-400 mt-2 truncate">低排出まで あと <span class="text-rose-300 font-bold">5</span> 体★5</p>
         </div>
 
-        <!-- 覇業報酬天井 (20回上限・10回確定) -->
+        <!-- 覇業報酬天井 -->
         <div class="bg-sengoku-panel p-3 rounded-xl border border-sengoku-border relative overflow-hidden">
           <div class="flex items-center justify-between text-[11px] text-red-300 font-bold mb-1">
             <span>覇業報酬 天井進捗</span>
@@ -225,7 +223,7 @@
           <p class="text-[10px] text-stone-400 mt-2">1回398小判 / ★5確定</p>
         </div>
 
-        <!-- 選択シーズン登用数 & ★5率 -->
+        <!-- 総ガチャ回数 / ★5率 -->
         <div class="bg-sengoku-panel p-3 rounded-xl border border-sengoku-border">
           <p class="text-[11px] text-stone-400 mb-1">総ガチャ回数 / ★5率</p>
           <div class="flex items-baseline justify-between">
@@ -240,7 +238,7 @@
           </p>
         </div>
 
-        <!-- 使用小判 & 登用状 -->
+        <!-- 消費小判 / 登用状 -->
         <div class="bg-sengoku-panel p-3 rounded-xl border border-sengoku-border">
           <p class="text-[11px] text-stone-400 mb-1">消費小判 / 登用状</p>
           <div class="flex items-baseline space-x-1">
@@ -303,11 +301,11 @@
             </div>
           </div>
 
-          <!-- 2行目: 登用方法 (プリセットボタンによる簡単入力) -->
+          <!-- 2行目: 登用方法プリセット -->
           <div>
             <label class="block text-xs font-medium text-stone-300 mb-1.5">登用方法 (タップで自動設定)</label>
             <div class="grid grid-cols-2 sm:grid-cols-6 gap-2" id="methodPresetContainer">
-              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition active" 
+              <button type="button" class="method-btn p-2 rounded-lg border border-amber-500 bg-stone-900 text-xs font-medium text-stone-200 text-center transition" 
                 data-method="無料1回" data-pulls="1" data-koban="0" data-tickets="0">
                 <span class="block font-bold text-amber-300">無料 1回</span>
                 <span class="text-[10px] text-stone-400">0小判 / 0枚</span>
@@ -357,7 +355,7 @@
             </div>
           </div>
 
-          <!-- 消費数手動微調整 (必要に応じて) -->
+          <!-- 消費数微調整 -->
           <div class="grid grid-cols-3 gap-3 bg-stone-900/60 p-3 rounded-xl border border-sengoku-border/50 text-xs">
             <div>
               <span class="text-stone-400 block mb-1">ガチャ回数</span>
@@ -373,7 +371,7 @@
             </div>
           </div>
 
-          <!-- 排出結果セクション (★4・★3は手軽に入力、★5は複数武将・高/低排出区分登録) -->
+          <!-- 排出結果セクション -->
           <div class="border border-sengoku-border rounded-xl p-3 sm:p-4 bg-stone-950/60 space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-stone-200 flex items-center gap-1.5">
@@ -409,7 +407,7 @@
               </div>
             </div>
 
-            <!-- ★5排出武将入力 (複数登録対応) -->
+            <!-- ★5排出武将入力 -->
             <div class="pt-2 border-t border-sengoku-border/40">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-bold text-amber-300 flex items-center gap-1">
@@ -421,7 +419,7 @@
               </div>
 
               <div id="star5EntriesList" class="space-y-2">
-                <!-- 動的に★5入力行が追加される (初期状態で1行常時表示) -->
+                <!-- 動的に1行目常時表示 -->
               </div>
             </div>
           </div>
@@ -449,17 +447,14 @@
         <h3 class="text-xs font-bold text-amber-300 mb-2 flex items-center gap-1.5">
           <i class="fa-solid fa-crown text-amber-400"></i> 直近の★5排出履歴
         </h3>
-        <div id="recentStar5Container" class="flex gap-2 overflow-x-auto pb-1 text-xs">
-          <!-- JS生成 -->
-        </div>
+        <div id="recentStar5Container" class="flex gap-2 overflow-x-auto pb-1 text-xs"></div>
       </div>
     </div>
 
     <!-- =========================================================
-         TAB 2: 集計 & 分析 (グラフ縦軸調整・高低排出割合)
+         TAB 2: 集計 & 分析
          ========================================================= -->
     <div id="tab-stats" class="tab-pane hidden space-y-5">
-      <!-- 集計概要カード -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="bg-sengoku-panel p-3.5 rounded-xl border border-sengoku-border">
           <span class="text-xs text-stone-400 block mb-0.5">総ガチャ回数</span>
@@ -485,17 +480,15 @@
         </div>
       </div>
 
-      <!-- グラフ分析エリア (縦軸調整コントロール付) -->
       <div class="bg-sengoku-panel p-4 sm:p-5 rounded-2xl border border-sengoku-border space-y-4">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-sengoku-border">
           <div>
             <h3 class="text-sm font-bold text-stone-100 flex items-center gap-1.5">
               <i class="fa-solid fa-chart-line text-amber-400"></i> ガチャ推移・★5排出率グラフ
             </h3>
-            <p class="text-[11px] text-stone-400">Pulllogの要望を反映：縦軸の範囲や表示モードを自由に調整可能</p>
+            <p class="text-[11px] text-stone-400">縦軸の範囲や表示モードを自由に調整可能</p>
           </div>
           
-          <!-- グラフ調整コントローラー -->
           <div class="flex items-center gap-2 text-xs">
             <select id="chartMetricSelect" class="bg-stone-900 border border-stone-700 rounded px-2.5 py-1 text-stone-200">
               <option value="rate">★5 排出率推移 (%)</option>
@@ -510,21 +503,17 @@
           </div>
         </div>
 
-        <!-- Chart Canvas -->
         <div class="relative h-64 sm:h-72 w-full">
           <canvas id="analysisChart"></canvas>
         </div>
       </div>
 
-      <!-- 武将別排出数 & 高/低排出ランキング -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="bg-sengoku-panel p-4 rounded-xl border border-sengoku-border">
           <h4 class="text-xs font-bold text-stone-200 mb-3 flex items-center gap-1.5">
             <i class="fa-solid fa-award text-amber-400"></i> ★5武将 排出ランキング (獲得数・凸数)
           </h4>
-          <div id="officerRankingList" class="space-y-2 max-h-72 overflow-y-auto pr-1 text-xs">
-            <!-- JSレンダリング -->
-          </div>
+          <div id="officerRankingList" class="space-y-2 max-h-72 overflow-y-auto pr-1 text-xs"></div>
         </div>
 
         <div class="bg-sengoku-panel p-4 rounded-xl border border-sengoku-border">
@@ -548,7 +537,6 @@
           <p class="text-xs text-stone-400">1回のガチャ実行を1件として保持。★5複数排出も紐づけて記録。</p>
         </div>
         
-        <!-- 操作・フィルター -->
         <div class="flex flex-wrap items-center gap-2">
           <select id="historyFilterGacha" class="bg-stone-900 text-xs text-stone-200 px-2.5 py-1.5 rounded-lg border border-stone-700">
             <option value="ALL">全ガチャ</option>
@@ -570,7 +558,6 @@
         </div>
       </div>
 
-      <!-- テーブル -->
       <div class="bg-sengoku-panel rounded-xl border border-sengoku-border overflow-hidden shadow">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
@@ -589,9 +576,7 @@
                 <th class="py-2.5 px-3 text-center w-16">操作</th>
               </tr>
             </thead>
-            <tbody id="historyTableBody" class="divide-y divide-sengoku-border/50 text-stone-300">
-              <!-- JSレンダリング -->
-            </tbody>
+            <tbody id="historyTableBody" class="divide-y divide-sengoku-border/50 text-stone-300"></tbody>
           </table>
         </div>
         <div id="historyEmptyMsg" class="p-8 text-center text-stone-500 text-xs hidden">
@@ -605,7 +590,6 @@
          ========================================================= -->
     <div id="tab-billing" class="tab-pane hidden space-y-5">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <!-- 課金入力カード -->
         <div class="sm:col-span-1 bg-sengoku-panel p-4 sm:p-5 rounded-2xl border border-sengoku-border shadow">
           <h3 class="text-sm font-bold text-stone-100 mb-3 flex items-center gap-1.5">
             <i class="fa-solid fa-circle-plus text-emerald-400"></i> 課金記録を追加
@@ -645,7 +629,6 @@
           </form>
         </div>
 
-        <!-- 課金履歴 & 集計カード -->
         <div class="sm:col-span-2 bg-sengoku-panel p-4 sm:p-5 rounded-2xl border border-sengoku-border space-y-3">
           <div class="flex items-center justify-between pb-2 border-b border-sengoku-border">
             <h3 class="text-sm font-bold text-stone-100">課金履歴・シーズン別集計</h3>
@@ -663,9 +646,7 @@
                   <th class="py-2 px-3 text-center">操作</th>
                 </tr>
               </thead>
-              <tbody id="billingTableBody" class="divide-y divide-sengoku-border/40 text-stone-300">
-                <!-- JSレンダリング -->
-              </tbody>
+              <tbody id="billingTableBody" class="divide-y divide-sengoku-border/40 text-stone-300"></tbody>
             </table>
           </div>
         </div>
@@ -702,12 +683,10 @@
           </button>
         </div>
 
-        <!-- 排出結果カードグリッド -->
         <div id="simResultsGrid" class="min-h-[140px] p-4 bg-stone-950 rounded-xl border border-stone-800 flex flex-wrap gap-2.5 items-center justify-center">
           <p class="text-xs text-stone-500">ボタンを押して登用を実行してください</p>
         </div>
 
-        <!-- シミュレーター統計 -->
         <div class="mt-4 pt-3 border-t border-sengoku-border/60 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
           <div class="p-2 bg-stone-900 rounded">
             <span class="text-stone-400 block text-[10px]">試行回数</span>
@@ -732,10 +711,10 @@
   </main>
 
   <!-- =========================================================
-       モーダル群 (アラート代替 / 設定 / 編集)
+       モーダル群
        ========================================================= -->
 
-  <!-- データ管理（JSONバックアップ / 復元 / PC・iPhone移行）モーダル -->
+  <!-- データ管理モーダル -->
   <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-sengoku-panel border border-sengoku-border w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-sengoku-border">
@@ -747,16 +726,16 @@
 
       <div class="space-y-3 bg-stone-900/80 p-3.5 rounded-xl border border-stone-800">
         <p class="text-stone-300 leading-relaxed text-[11px]">
-          Supabaseや複雑な外部サーバー設定は不要です。データはこの端末（ブラウザ）に自動保存されます。
+          データはこの端末（ブラウザ）に安全に自動保存されます。
         </p>
         <div class="p-2.5 rounded-lg bg-stone-950/70 border border-stone-800 text-stone-400 space-y-1">
           <p class="font-bold text-amber-300 flex items-center gap-1">
             <i class="fa-solid fa-mobile-screen-button"></i> PCとiPhoneで引き継ぐ方法:
           </p>
           <ol class="list-decimal list-inside space-y-0.5 text-[10px]">
-            <li>移行元の端末で「JSON書出」を押してファイルを保存</li>
+            <li>移行元の端末で「データを書出」を押してファイルを保存</li>
             <li>LINEやAirDrop、メール等で別端末へ送信</li>
-            <li>移行先の端末でこの画面を開き「JSON読込」を押すだけで完了！</li>
+            <li>移行先の端末で「データを読込」を押すだけで完了！</li>
           </ol>
         </div>
 
@@ -815,7 +794,6 @@
         </div>
       </div>
 
-      <!-- 排出★5武将の編集エリア -->
       <div class="border border-stone-800 rounded-lg p-2.5 bg-stone-950/60 space-y-2">
         <div class="flex items-center justify-between">
           <span class="font-bold text-amber-300">排出★5武将の編集</span>
@@ -823,9 +801,7 @@
             + ★5追加
           </button>
         </div>
-        <div id="editStar5Container" class="space-y-1.5">
-          <!-- JSで動的レンダリング -->
-        </div>
+        <div id="editStar5Container" class="space-y-1.5"></div>
       </div>
 
       <div>
@@ -850,7 +826,6 @@
         <button id="closeMasterModalBtn" class="text-stone-400 hover:text-white p-1 text-sm"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- 新規武将の追加フォーム -->
       <div class="bg-stone-900/90 p-3 rounded-xl border border-stone-800 space-y-2 flex-shrink-0">
         <span class="font-bold text-stone-200 block text-[11px]">新しい★5武将を追加</span>
         <div class="flex gap-2">
@@ -865,7 +840,6 @@
         </div>
       </div>
 
-      <!-- 並び替えクイックツールバー -->
       <div class="flex items-center justify-between px-1 flex-shrink-0 text-[11px] text-stone-400">
         <span class="flex items-center gap-1"><i class="fa-solid fa-arrow-down-up-across-line text-amber-400"></i> 並び替え:</span>
         <div class="flex items-center gap-1.5">
@@ -878,10 +852,7 @@
         </div>
       </div>
 
-      <!-- 登録武将リスト -->
-      <div class="flex-1 overflow-y-auto pr-1 space-y-1.5" id="masterOfficersList">
-        <!-- JSでレンダリング -->
-      </div>
+      <div class="flex-1 overflow-y-auto pr-1 space-y-1.5" id="masterOfficersList"></div>
 
       <div class="flex justify-between items-center pt-2 border-t border-sengoku-border flex-shrink-0">
         <button id="resetMasterDefaultBtn" class="text-stone-500 hover:text-amber-400 text-[11px]">
@@ -894,7 +865,7 @@
     </div>
   </div>
 
-  <!-- 確認ダイアログ (alert/confirm禁止規約対応) -->
+  <!-- 確認ダイアログ -->
   <div id="confirmDialog" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-sengoku-panel border border-sengoku-border w-full max-w-sm rounded-xl p-5 shadow-2xl space-y-3 text-xs">
       <h3 id="confirmDialogTitle" class="text-sm font-bold text-stone-100">確認</h3>
@@ -907,14 +878,251 @@
   </div>
 
   <!-- =========================================================
-       JavaScript ロジック (V3 コア実装)
+       JavaScript ロジック (完全版)
        ========================================================= -->
   <script>
+    // デフォルト武将マスター
+    const DEFAULT_STAR5_MASTER = [
+      { name: "織田信長", tier: "低排出" },
+      { name: "明智光秀", tier: "高排出" },
+      { name: "羽柴秀吉", tier: "低排出" },
+      { name: "柴田勝家", tier: "高排出" },
+      { name: "徳川家康", tier: "低排出" },
+      { name: "本多忠勝", tier: "高排出" },
+      { name: "武田信玄", tier: "低排出" },
+      { name: "山県昌景", tier: "高排出" },
+      { name: "上杉謙信", tier: "低排出" },
+      { name: "直江兼続", tier: "高排出" },
+      { name: "毛利元就", tier: "低排出" },
+      { name: "小早川隆景", tier: "高排出" },
+      { name: "北条氏康", tier: "低排出" },
+      { name: "伊達政宗", tier: "低排出" },
+      { name: "長宗我部元親", tier: "高排出" },
+      { name: "島津義弘", tier: "高排出" },
+      { name: "今川義元", tier: "高排出" }
+    ];
+
+    // アプリ状態
+    let state = {
+      history: [],
+      billing: []
+    };
+
+    let star5Master = [];
+    let chartInstance = null;
+    let pieChartInstance = null;
+    let customChartYMax = null;
+
+    // シミュレーター用状態
+    let simState = {
+      pity: 0,
+      pulls: 0,
+      koban: 0,
+      count5: 0
+    };
+
     /* ---------------------------------------------------------
-       天井計算ロジック（5連中の排出順・低排出裏天井を追跡）
+       初期化・ストレージ処理
+       --------------------------------------------------------- */
+    function loadStorageData() {
+      try {
+        const histRaw = localStorage.getItem("shinsen_gacha_history");
+        const billRaw = localStorage.getItem("shinsen_billing_history");
+        const masterRaw = localStorage.getItem("shinsen_star5_master");
+
+        if (histRaw) state.history = JSON.parse(histRaw);
+        if (billRaw) state.billing = JSON.parse(billRaw);
+
+        if (masterRaw) {
+          star5Master = JSON.parse(masterRaw);
+        } else {
+          star5Master = [...DEFAULT_STAR5_MASTER];
+          saveMasterData();
+        }
+      } catch (e) {
+        console.error("ストレージ読み込みエラー", e);
+        star5Master = [...DEFAULT_STAR5_MASTER];
+      }
+    }
+
+    function saveStorageData() {
+      try {
+        localStorage.setItem("shinsen_gacha_history", JSON.stringify(state.history));
+        localStorage.setItem("shinsen_billing_history", JSON.stringify(state.billing));
+      } catch (e) {
+        console.error("ストレージ書き込みエラー", e);
+      }
+    }
+
+    function saveMasterData() {
+      try {
+        localStorage.setItem("shinsen_star5_master", JSON.stringify(star5Master));
+      } catch (e) {
+        console.error("マスター保存エラー", e);
+      }
+    }
+
+    /* ---------------------------------------------------------
+       登録フォーム送信処理 (handleRecordSubmit)
+       --------------------------------------------------------- */
+    function handleRecordSubmit(e) {
+      e.preventDefault();
+
+      const date = document.getElementById("formDate").value;
+      const season = document.getElementById("formSeason").value;
+      const gachaType = document.getElementById("formGachaType").value;
+      const pulls = parseInt(document.getElementById("formPulls").value) || 1;
+      const koban = parseInt(document.getElementById("formKoban").value) || 0;
+      const tickets = parseInt(document.getElementById("formTickets").value) || 0;
+      const star4Count = parseInt(document.getElementById("formStar4Count").value) || 0;
+      const star3Count = parseInt(document.getElementById("formStar3Count").value) || 0;
+      const memo = document.getElementById("formMemo").value.trim();
+
+      // ★5入力行の取得
+      const star5List = [];
+      const s5Rows = document.querySelectorAll(".star5-entry-row");
+      let masterUpdated = false;
+
+      s5Rows.forEach(row => {
+        const sel = row.querySelector(".s5-select");
+        const custom = row.querySelector(".s5-custom-name");
+        const tier = row.querySelector(".s5-tier").value;
+        const orderVal = row.querySelector(".s5-order").value;
+
+        if (!sel) return;
+        const val = sel.value;
+
+        if (val === "none") return; // 排出なし
+
+        let officerName = "";
+        if (val === "その他") {
+          officerName = custom.value.trim();
+          if (officerName && !star5Master.some(m => m.name === officerName)) {
+            // 新規武将をマスターへ自動登録
+            star5Master.unshift({ name: officerName, tier: tier });
+            masterUpdated = true;
+          }
+        } else {
+          officerName = val;
+        }
+
+        if (officerName) {
+          star5List.push({
+            name: officerName,
+            tier: tier,
+            order: orderVal ? parseInt(orderVal) : null
+          });
+        }
+      });
+
+      if (masterUpdated) {
+        saveMasterData();
+      }
+
+      // 履歴オブジェクト作成
+      const record = {
+        id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+        date: date,
+        season: season,
+        gachaType: gachaType,
+        pulls: pulls,
+        koban: koban,
+        tickets: tickets,
+        star4Count: star4Count,
+        star3Count: star3Count,
+        star5List: star5List,
+        memo: memo,
+        createdAt: Date.now()
+      };
+
+      // 履歴の先頭に追加
+      state.history.unshift(record);
+
+      // 日付降順ソート
+      state.history.sort((a, b) => {
+        const da = new Date(b.date).getTime();
+        const db = new Date(a.date).getTime();
+        if (da !== db) return da - db;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+
+      saveStorageData();
+      renderAll();
+
+      // トースト通知 & フォームリセット
+      const s5Names = star5List.map(s => s.name).join(", ");
+      const msg = star5List.length > 0 
+        ? `登用を登録しました！ (★5: ${s5Names})`
+        : `登用を登録しました (${pulls}連)`;
+      showToast(msg, star5List.length > 0 ? "gold" : "blue");
+
+      resetRecordForm();
+    }
+
+    function resetRecordForm() {
+      // 日付は今日を維持
+      document.getElementById("formDate").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("formMemo").value = "";
+
+      // プリセットを「無料1回」に戻す
+      setupMethodPresets();
+      const firstBtn = document.querySelector("#methodPresetContainer .method-btn");
+      if (firstBtn) firstBtn.click();
+
+      // ★4・★3のリセット
+      document.getElementById("formStar4Count").value = "0";
+      document.getElementById("formStar3Count").value = "1";
+
+      // ★5入力を1枠（★5なし）に戻す
+      initStar5DefaultEntry();
+    }
+
+    function initStar5DefaultEntry() {
+      const container = document.getElementById("star5EntriesList");
+      if (!container) return;
+      container.innerHTML = "";
+      addStar5EntryRow("", "高排出", false);
+    }
+
+    /* ---------------------------------------------------------
+       課金フォーム送信処理 (handleBillingSubmit)
+       --------------------------------------------------------- */
+    function handleBillingSubmit(e) {
+      e.preventDefault();
+      const date = document.getElementById("billDate").value;
+      const season = document.getElementById("billSeason").value;
+      const amount = parseInt(document.getElementById("billAmount").value) || 0;
+      const memo = document.getElementById("billMemo").value.trim();
+
+      if (amount <= 0) {
+        showToast("有効な金額を入力してください", "red");
+        return;
+      }
+
+      const billingItem = {
+        id: "bill_" + Date.now(),
+        date,
+        season,
+        amount,
+        memo,
+        createdAt: Date.now()
+      };
+
+      state.billing.unshift(billingItem);
+      state.billing.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      saveStorageData();
+      renderAll();
+
+      document.getElementById("billAmount").value = "";
+      document.getElementById("billMemo").value = "";
+      showToast(`¥${amount.toLocaleString()} の課金を登録しました`, "gold");
+    }
+
+    /* ---------------------------------------------------------
+       天井計算ロジック
        --------------------------------------------------------- */
     function calculatePity() {
-      // 日付昇順（古い順）に履歴を走査して天井カウントを追跡
       const sorted = [...state.history].sort((a, b) => {
         const da = new Date(a.date).getTime();
         const db = new Date(b.date).getTime();
@@ -922,16 +1130,15 @@
         return (a.createdAt || 0) - (b.createdAt || 0);
       });
 
-      let meishoPity = 0;       // 名将天井（前回★5からの連数）
-      let hogyoCount = 0;       // 覇業ガチャの総回数
-      let hogyoPity = 0;        // 覇業ガチャの天井カウント（10連で★5確定）
-      let highStreak = 0;       // 高排出★5の連続回数（裏天井追跡用）
+      let meishoPity = 0;
+      let hogyoCount = 0;
+      let hogyoPity = 0;
+      let highStreak = 0;
 
       sorted.forEach(item => {
         const pulls = item.pulls || 1;
         const star5s = item.star5List || [];
 
-        // 名将登用の30連天井計算
         if (item.gachaType === "名将登用" || item.gachaType === "通常") {
           if (star5s.length > 0) {
             let lastOrder = pulls;
@@ -959,14 +1166,12 @@
           }
         }
 
-        // 名将ガチャにおける低排出（裏天井）の追跡
-        // 排出順（order）があればその順序で、なければ登録順で処理
         if (item.gachaType === "名将登用" || item.gachaType === "通常") {
           if (star5s.length > 0) {
             const sortedStar5s = [...star5s].sort((x, y) => (x.order || 0) - (y.order || 0));
             sortedStar5s.forEach(s => {
               if (s.tier === "低排出") {
-                highStreak = 0; // 低排出が出たらカウントリセット
+                highStreak = 0;
               } else if (s.tier === "高排出") {
                 highStreak++;
               }
@@ -975,14 +1180,12 @@
         }
       });
 
-      // 名将天井の反映 (30連天井)
       const remainingMeisho = Math.max(0, 30 - meishoPity);
       document.getElementById("pityCount").textContent = remainingMeisho;
       document.getElementById("sinceLast5Star").textContent = meishoPity;
       const meishoPercent = Math.min(100, (meishoPity / 30) * 100);
       document.getElementById("pityBar").style.width = meishoPercent + "%";
 
-      // 低排出（裏天井）の反映（高排出5連で次が低排出確定）
       const lowPityEl = document.getElementById("lowPityCurrent");
       const lowPityBar = document.getElementById("lowPityBar");
       const lowPityMsg = document.getElementById("lowPityStatusMsg");
@@ -1000,7 +1203,6 @@
         }
       }
 
-      // 覇業報酬天井の反映 (10連確定・上限20連)
       const hogyoRemaining = Math.max(0, 10 - (hogyoPity % 10));
       document.getElementById("hogyoPityCount").textContent = (hogyoCount >= 20) ? 0 : (hogyoRemaining === 0 ? 10 : hogyoRemaining);
       document.getElementById("hogyoTotal").textContent = Math.min(20, hogyoCount);
@@ -1009,7 +1211,7 @@
     }
 
     /* ---------------------------------------------------------
-       ダッシュボード・全体レンダリング
+       ダッシュボード・全体描画 (renderAll)
        --------------------------------------------------------- */
     function renderAll() {
       const selectedSeason = document.getElementById("globalSeasonFilter").value;
@@ -1022,7 +1224,6 @@
         filteredBilling = filteredBilling.filter(b => b.season === selectedSeason);
       }
 
-      // 統計計算
       let totalPulls = 0;
       let totalKoban = 0;
       let totalTickets = 0;
@@ -1047,7 +1248,6 @@
       const totalBilled = filteredBilling.reduce((sum, b) => sum + (b.amount || 0), 0);
       const star5Rate = totalPulls > 0 ? ((star5Count / totalPulls) * 100).toFixed(2) : "0.0";
 
-      // ダッシュボードへの反映
       document.getElementById("dashTotalPulls").textContent = totalPulls;
       document.getElementById("dashStar5Rate").textContent = star5Rate + "%";
       document.getElementById("dashStar5Count").textContent = star5Count;
@@ -1057,7 +1257,6 @@
       document.getElementById("dashTotalTickets").textContent = totalTickets;
       document.getElementById("dashTotalBilled").textContent = "¥" + totalBilled.toLocaleString();
 
-      // 集計タブへの反映
       document.getElementById("stTotalPulls").textContent = totalPulls;
       document.getElementById("stTotalKoban").textContent = totalKoban.toLocaleString();
       document.getElementById("stTotalStar5").textContent = star5Count;
@@ -1065,17 +1264,14 @@
       document.getElementById("stHighStar5").textContent = highCount;
       document.getElementById("stLowStar5").textContent = lowCount;
 
-      // タブバッジ
       document.getElementById("tabHistoryCount").textContent = filteredHistory.length;
 
-      // 各テーブル・天井の再計算
       calculatePity();
       renderRecentStar5();
       renderHistoryTable();
       renderBillingTable();
       renderOfficerRanking();
 
-      // グラフタブが表示されている場合は再描画
       const statsTab = document.getElementById("tab-stats");
       if (statsTab && !statsTab.classList.contains("hidden")) {
         renderCharts();
@@ -1125,7 +1321,7 @@
     }
 
     /* ---------------------------------------------------------
-       履歴一覧テーブル レンダリング
+       履歴テーブル描画
        --------------------------------------------------------- */
     function renderHistoryTable() {
       const selectedSeason = document.getElementById("globalSeasonFilter").value;
@@ -1149,7 +1345,6 @@
         const tr = document.createElement("tr");
         tr.className = "hover:bg-stone-900/60 transition";
 
-        // ★5武将タグの作成 (何番目出の表示対応)
         let s5Html = `<span class="text-stone-500">-</span>`;
         if (h.star5List && h.star5List.length > 0) {
           s5Html = h.star5List.map(s => `
@@ -1213,9 +1408,6 @@
       });
     }
 
-    /* ---------------------------------------------------------
-       選択履歴の結合機能
-       --------------------------------------------------------- */
     function mergeSelectedHistories() {
       const checkedBoxes = document.querySelectorAll(".history-row-check:checked");
       if (checkedBoxes.length < 2) {
@@ -1229,7 +1421,6 @@
 
         if (targets.length === 0) return;
 
-        // 代表のメタデータ（最新の日付・シーズン・ガチャ種別）を採用
         const base = targets[0];
         let totalPulls = 0;
         let totalKoban = 0;
@@ -1268,11 +1459,9 @@
           createdAt: base.createdAt || Date.now()
         };
 
-        // 元の履歴を削除し、結合した履歴を挿入
         state.history = state.history.filter(h => !selectedIds.has(h.id));
         state.history.unshift(mergedRecord);
 
-        // 日付・作成日時順で整理
         state.history.sort((a, b) => {
           const da = new Date(b.date).getTime();
           const db = new Date(a.date).getTime();
@@ -1283,7 +1472,6 @@
         saveStorageData();
         renderAll();
 
-        // チェックボックス全解除
         const selectAll = document.getElementById("selectAllCheckbox");
         if (selectAll) selectAll.checked = false;
 
@@ -1317,7 +1505,7 @@
     }
 
     /* ---------------------------------------------------------
-       履歴の編集
+       履歴編集モーダル
        --------------------------------------------------------- */
     function addEditStar5Row(name = "", tier = "高排出", order = "") {
       const container = document.getElementById("editStar5Container");
@@ -1401,7 +1589,6 @@
       item.tickets = parseInt(document.getElementById("editTickets").value) || 0;
       item.memo = document.getElementById("editMemo").value.trim();
 
-      // ★5武将リストの再取得
       const rows = document.querySelectorAll(".edit-s5-row");
       const updatedList = [];
       rows.forEach(r => {
@@ -1424,7 +1611,7 @@
     }
 
     /* ---------------------------------------------------------
-       課金管理テーブル
+       課金テーブル
        --------------------------------------------------------- */
     function renderBillingTable() {
       const tbody = document.getElementById("billingTableBody");
@@ -1521,13 +1708,12 @@
     }
 
     /* ---------------------------------------------------------
-       Chart.js グラフ分析 (縦軸調整対応)
+       Chart.js グラフ
        --------------------------------------------------------- */
     function renderCharts() {
       const metric = document.getElementById("chartMetricSelect").value;
       const ctx = document.getElementById("analysisChart").getContext("2d");
 
-      // 日付順ソート (過去順)
       const sorted = [...state.history].sort((a, b) => new Date(a.date) - new Date(b.date));
 
       const labels = [];
@@ -1595,7 +1781,6 @@
         }
       });
 
-      // ドーナツグラフ (高排出 / 低排出)
       renderPieChart();
     }
 
@@ -1639,7 +1824,7 @@
     }
 
     /* ---------------------------------------------------------
-       ★5 排出武将 入力行管理
+       ★5 排出武将 入力行
        --------------------------------------------------------- */
     function addStar5EntryRow(initialName = "", initialTier = "高排出", canDelete = true, initialOrder = "") {
       const container = document.getElementById("star5EntriesList");
@@ -1647,13 +1832,12 @@
 
       const div = document.createElement("div");
       div.id = rowId;
-      div.className = "star5-entry-row flex flex-wrap items-center gap-2 bg-stone-900 p-2.5 rounded-lg border border-amber-500/40 animate-fade-in";
+      div.className = "star5-entry-row flex flex-wrap items-center gap-2 bg-stone-900 p-2.5 rounded-lg border border-amber-500/40";
 
       let optionsHtml = `<option value="none">★5なし (排出なし)</option>`;
       optionsHtml += star5Master.map(m => `<option value="${m.name}" ${m.name === initialName ? 'selected' : ''}>${m.name} (${m.tier})</option>`).join("");
       optionsHtml += `<option value="その他">その他 (直接入力・マスター自動登録)</option>`;
 
-      // 5連ガチャ等の排出順指定セレクト（1〜5番目）
       let orderOptionsHtml = `<option value="">順番 (任意)</option>`;
       for (let i = 1; i <= 5; i++) {
         orderOptionsHtml += `<option value="${i}" ${initialOrder == i ? 'selected' : ''}>${i}番目に出た</option>`;
@@ -1724,7 +1908,7 @@
     }
 
     /* ---------------------------------------------------------
-       ★5武将マスター管理モーダル ロジック
+       ★5武将マスター管理モーダル
        --------------------------------------------------------- */
     function openMasterModal() {
       renderMasterList();
@@ -1743,7 +1927,6 @@
         const isLast = index === star5Master.length - 1;
 
         item.innerHTML = `
-          <!-- 上下移動ボタン -->
           <div class="flex flex-col mr-2 -space-y-0.5">
             <button onclick="moveMasterOfficer(${index}, -1)" ${isFirst ? 'disabled class="opacity-20 cursor-not-allowed"' : 'class="hover:text-amber-400"'} title="上へ移動">
               <i class="fa-solid fa-caret-up text-[13px]"></i>
@@ -1772,35 +1955,26 @@
       });
     }
 
-    /* ---------------------------------------------------------
-       武将マスター 並び替えロジック
-       --------------------------------------------------------- */
     function moveMasterOfficer(index, delta) {
       const targetIndex = index + delta;
       if (targetIndex < 0 || targetIndex >= star5Master.length) return;
 
-      // 配列要素を入れ替え
       const temp = star5Master[index];
       star5Master[index] = star5Master[targetIndex];
       star5Master[targetIndex] = temp;
 
       saveMasterData();
       renderMasterList();
-      // 入力フォーム側のセレクトボックス候補順も連動更新
       initStar5DefaultEntry();
     }
 
     function sortMasterOfficers(mode) {
       if (mode === 'kana') {
-        // 日本語五十音（ロケール）順
         star5Master.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
         showToast("武将を五十音順に整列しました", "gold");
       } else if (mode === 'tier') {
-        // 低排出（希少枠）を優先し、同じ区分内は五十音順
         star5Master.sort((a, b) => {
-          if (a.tier === b.tier) {
-            return a.name.localeCompare(b.name, 'ja');
-          }
+          if (a.tier === b.tier) return a.name.localeCompare(b.name, 'ja');
           return a.tier === '低排出' ? -1 : 1;
         });
         showToast("武将を排出区分順に整列しました", "gold");
@@ -1818,7 +1992,6 @@
       const span = document.getElementById(`masterNameSpan_${index}`);
       if (!span) return;
 
-      // インライン入力フォームに一時切り替え
       const parent = span.parentElement;
       const currentName = target.name;
       parent.innerHTML = `
@@ -1852,7 +2025,6 @@
       star5Master[index].name = newName;
       saveMasterData();
 
-      // 過去の登録履歴内の同名武将も一括置換
       let replacedCount = 0;
       state.history.forEach(h => {
         if (Array.isArray(h.star5List)) {
@@ -1923,14 +2095,13 @@
     }
 
     /* ---------------------------------------------------------
-       データ管理 & バックアップ復元 (外部クラウド不要)
+       データ管理 & バックアップ
        --------------------------------------------------------- */
     function openSettingsModal() {
       document.getElementById("settingsModal").classList.remove("hidden");
     }
 
     function exportJsonBackup() {
-      // 履歴・課金だけでなく、カスタマイズした武将マスターも含めて書き出す
       const exportData = {
         history: state.history,
         billing: state.billing,
@@ -1944,7 +2115,7 @@
       a.download = `shinsen_gacha_backup_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast("武将マスターを含むバックアップデータを書き出しました", "gold");
+      showToast("バックアップデータを書き出しました", "gold");
     }
 
     function importJsonBackup(e) {
@@ -1956,7 +2127,6 @@
         try {
           const parsed = JSON.parse(event.target.result);
           if (Array.isArray(parsed.history)) {
-            // IDベースでマージ（既存の履歴も消さずに合体）
             const historyMap = new Map();
             state.history.forEach(item => historyMap.set(item.id, item));
             parsed.history.forEach(item => historyMap.set(item.id, item));
@@ -1969,7 +2139,6 @@
               state.billing = Array.from(billingMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
             }
 
-            // バックアップに武将マスターが含まれている場合はマスターも合体・反映
             if (Array.isArray(parsed.star5Master) && parsed.star5Master.length > 0) {
               const masterMap = new Map();
               star5Master.forEach(m => masterMap.set(m.name, m));
@@ -1994,7 +2163,7 @@
     }
 
     /* ---------------------------------------------------------
-       シミュレーターロジック (公称5.6% + 30連天井)
+       シミュレーター
        --------------------------------------------------------- */
     function runSimulator(count = 1) {
       const grid = document.getElementById("simResultsGrid");
@@ -2015,7 +2184,7 @@
         if (isPity || rand < 5.6) {
           cardRarity = 5;
           simState.count5++;
-          simState.pity = 0; // 天井リセット
+          simState.pity = 0;
           const pick = star5Master[Math.floor(Math.random() * star5Master.length)] || DEFAULT_STAR5_MASTER[0];
           cardName = pick.name;
           tier = pick.tier;
@@ -2040,7 +2209,6 @@
         grid.appendChild(el);
       }
 
-      // シミュ統計更新
       document.getElementById("simStatPulls").textContent = simState.pulls;
       document.getElementById("simStatKoban").textContent = Math.round(simState.koban).toLocaleString();
       document.getElementById("simStatCount5").textContent = simState.count5;
@@ -2060,7 +2228,70 @@
     }
 
     /* ---------------------------------------------------------
-       トースト通知 & 確認ダイアログ (alert/confirm禁止ルール)
+       プリセットボタン設定
+       --------------------------------------------------------- */
+    function setupMethodPresets() {
+      const container = document.getElementById("methodPresetContainer");
+      if (!container) return;
+      const buttons = container.querySelectorAll(".method-btn");
+      const multiSetRow = document.getElementById("multiSetRow");
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          buttons.forEach(b => {
+            b.classList.remove("border-amber-500");
+            b.classList.add("border-stone-700");
+          });
+          btn.classList.remove("border-stone-700");
+          btn.classList.add("border-amber-500");
+
+          const pulls = parseInt(btn.dataset.pulls) || 1;
+          const koban = parseInt(btn.dataset.koban) || 0;
+          const tickets = parseInt(btn.dataset.tickets) || 0;
+          const method = btn.dataset.method;
+
+          document.getElementById("formPulls").value = pulls;
+          document.getElementById("formKoban").value = koban;
+          document.getElementById("formTickets").value = tickets;
+
+          if (pulls === 1) {
+            document.getElementById("formStar4Count").value = "0";
+            document.getElementById("formStar3Count").value = "1";
+          } else {
+            document.getElementById("formStar4Count").value = "1";
+            document.getElementById("formStar3Count").value = String(pulls - 1);
+          }
+
+          if (multiSetRow) {
+            if (method === "通常5回") {
+              multiSetRow.classList.remove("hidden");
+              const multiSelect = document.getElementById("formMultiSets");
+              if (multiSelect) multiSelect.value = "1";
+            } else {
+              multiSetRow.classList.add("hidden");
+            }
+          }
+        });
+      });
+
+      const multiSelect = document.getElementById("formMultiSets");
+      if (multiSelect) {
+        multiSelect.addEventListener("change", (e) => {
+          const sets = parseInt(e.target.value) || 1;
+          const totalPulls = sets * 5;
+          const totalKoban = sets * 948;
+
+          document.getElementById("formPulls").value = totalPulls;
+          document.getElementById("formKoban").value = totalKoban;
+          document.getElementById("formTickets").value = 0;
+          document.getElementById("formStar4Count").value = String(sets);
+          document.getElementById("formStar3Count").value = String(totalPulls - sets);
+        });
+      }
+    }
+
+    /* ---------------------------------------------------------
+       ユーティリティ & UI
        --------------------------------------------------------- */
     function showToast(msg, type = "blue") {
       const container = document.getElementById("toastContainer");
@@ -2112,6 +2343,120 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }
+
+    /* ---------------------------------------------------------
+       DOM読み込み完了時 初期化
+       --------------------------------------------------------- */
+    document.addEventListener("DOMContentLoaded", () => {
+      loadStorageData();
+
+      // 日付初期設定
+      const todayStr = new Date().toISOString().slice(0, 10);
+      document.getElementById("formDate").value = todayStr;
+      document.getElementById("billDate").value = todayStr;
+
+      // プリセットボタン・初期★5入力行
+      setupMethodPresets();
+      initStar5DefaultEntry();
+
+      // タブナビゲーション
+      document.querySelectorAll(".nav-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".nav-tab").forEach(t => {
+            t.classList.remove("active-tab", "border-amber-500", "text-amber-300", "font-bold");
+            t.classList.add("border-transparent", "text-stone-400", "font-medium");
+          });
+          tab.classList.add("active-tab", "border-amber-500", "text-amber-300", "font-bold");
+          tab.classList.remove("border-transparent", "text-stone-400", "font-medium");
+
+          const targetId = tab.dataset.tab;
+          document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.add("hidden"));
+          const activePane = document.getElementById(targetId);
+          if (activePane) activePane.classList.remove("hidden");
+
+          if (targetId === "tab-stats") {
+            renderCharts();
+          }
+        });
+      });
+
+      // フォームイベント
+      document.getElementById("recordForm").addEventListener("submit", handleRecordSubmit);
+      document.getElementById("resetFormBtn").addEventListener("click", resetRecordForm);
+      document.getElementById("billingForm").addEventListener("submit", handleBillingSubmit);
+
+      // ★5追加ボタン
+      document.getElementById("addStar5Btn").addEventListener("click", () => addStar5EntryRow("", "高排出", true));
+
+      // フィルター変更
+      document.getElementById("globalSeasonFilter").addEventListener("change", renderAll);
+      document.getElementById("historyFilterGacha").addEventListener("change", renderHistoryTable);
+
+      // 履歴一括操作
+      document.getElementById("mergeSelectedHistoryBtn").addEventListener("click", mergeSelectedHistories);
+      document.getElementById("deleteSelectedHistoryBtn").addEventListener("click", deleteSelectedHistories);
+      document.getElementById("deleteAllHistoryBtn").addEventListener("click", deleteAllHistories);
+
+      const selectAll = document.getElementById("selectAllCheckbox");
+      if (selectAll) {
+        selectAll.addEventListener("change", (e) => {
+          document.querySelectorAll(".history-row-check").forEach(cb => cb.checked = e.target.checked);
+        });
+      }
+
+      // 履歴編集モーダル
+      document.getElementById("closeEditModalBtn").addEventListener("click", () => {
+        document.getElementById("editHistoryModal").classList.add("hidden");
+      });
+      document.getElementById("cancelEditBtn").addEventListener("click", () => {
+        document.getElementById("editHistoryModal").classList.add("hidden");
+      });
+      document.getElementById("saveEditBtn").addEventListener("click", saveEditedHistory);
+      document.getElementById("addEditStar5Btn").addEventListener("click", () => addEditStar5Row("", "高排出", ""));
+
+      // マスター管理モーダル
+      document.getElementById("openMasterModalBtn").addEventListener("click", openMasterModal);
+      document.getElementById("closeMasterModalBtn").addEventListener("click", () => {
+        document.getElementById("masterModal").classList.add("hidden");
+      });
+      document.getElementById("finishMasterBtn").addEventListener("click", () => {
+        document.getElementById("masterModal").classList.add("hidden");
+      });
+      document.getElementById("addMasterBtn").addEventListener("click", addMasterOfficer);
+      document.getElementById("resetMasterDefaultBtn").addEventListener("click", resetMasterToDefault);
+
+      // 設定・バックアップモーダル
+      document.getElementById("openSettingsBtn").addEventListener("click", openSettingsModal);
+      document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+        document.getElementById("settingsModal").classList.add("hidden");
+      });
+      document.getElementById("exportJsonBtn").addEventListener("click", exportJsonBackup);
+      document.getElementById("importJsonBtn").addEventListener("click", () => {
+        document.getElementById("importJsonInput").click();
+      });
+      document.getElementById("importJsonInput").addEventListener("change", importJsonBackup);
+
+      // グラフスケール
+      document.getElementById("chartMetricSelect").addEventListener("change", renderCharts);
+      document.getElementById("applyChartScaleBtn").addEventListener("click", () => {
+        const val = document.getElementById("chartYMaxInput").value;
+        customChartYMax = val ? parseFloat(val) : null;
+        renderCharts();
+        showToast("グラフのY軸を更新しました", "blue");
+      });
+
+      // シミュレーター
+      document.getElementById("simPull1").addEventListener("click", () => runSimulator(1));
+      document.getElementById("simPull5").addEventListener("click", () => runSimulator(5));
+      document.getElementById("simPullToPity").addEventListener("click", () => {
+        const rem = 30 - simState.pity;
+        runSimulator(rem > 0 ? rem : 30);
+      });
+      document.getElementById("resetSimBtn").addEventListener("click", resetSimulator);
+
+      // 初回レンダリング
+      renderAll();
+    });
   </script>
 </body>
 </html>
