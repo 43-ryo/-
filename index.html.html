@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>信長の野望 真戦 - ガチャ管理</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans JP"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            serif: ['"Cinzel"', 'serif'],
+          },
+          colors: {
+            sengoku: {
+              gold: '#d4af37',
+              'gold-light': '#fdf2ba',
+              'gold-dark': '#996515',
+              red: '#8b1e1e',
+              'red-dark': '#500e0e',
+              black: '#0f0f13',
+              panel: '#181820',
+              card: '#20202c',
+              border: '#323244',
+              accent: '#3b82f6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: #0d0c12 radial-gradient(circle at 50% 0%, #1e1b2e 0%, #0d0c12 85%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #fff3b0 0%, #d4af37 50%, #aa771c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    /* iOS input zoom prevention */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+    @media (min-width: 640px) {
+      input, select, textarea {
+        font-size: 14px !important;
+      }
+    }
+    /* トースト通知 */
+    #toastContainer {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: rgba(24, 24, 32, 0.95);
+      border: 1px solid #3b82f6;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast.gold { border-color: #d4af37; }
+    .toast.red { border-color: #ef4444; }
+  </style>
+</head>
+<body class="font-sans antialiased pb-24 sm:pb-12">
+
+  <!-- トースト通知コンテナ -->
+  <div id="toastContainer"></div>
+
+  <!-- ヘッダー -->
+  <header class="border-b border-sengoku-border/80 bg-sengoku-black/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-red-800 flex items-center justify-center shadow-lg border border-amber-400/40">
+          <i class="fa-solid fa-chess-rook text-white text-base"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-wider gold-gradient-text">真戦ガチャ管理</h1>
+          </div>
+          <p class="text-[11px] text-stone-400 hidden xs:block">信長の野望 真戦 登用・小判・天井・データ管理</p>
+        </div>
+      </div>
+      
+      <!-- シーズン選択 & データ管理ボタン -->
+      <div class="flex items-center space-x-2">
+        <div class="flex items-center bg-stone-900 border border-sengoku-border rounded-lg px-2 py-1">
+          <label class="text-[11px] text-stone-400 mr-1.5 font-bold">期:</label>
+          <select id="globalSeasonFilter" class="bg-transparent text-xs text-amber-300 font-bold focus:outline-none">
+            <option value="ALL">全シーズン</option>
+            <option value="S1">S1</option>
+            <option value="S2">S2</option>
+            <option value="S3">S3</option>
+            <option value="S4">S4</option>
+            <option value="S5" selected>S5</option>
+            <option value="S6">S6</option>
+            <option value="S7">S7</option>
+            <option value="S8">S8</option>
+            <option value="S9">S9</option>
+            <option value="S10">S10</option>
+            <option value="PK">PKシーズン</option>
+          </select>
+        </div>
+
+        <button id="openSettingsBtn" title="バックアップ・復元" class="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 text-xs flex items-center gap-1.5 border border-sengoku-border transition">
+          <i class="fa-solid fa-file-arrow-up text-amber-400"></i>
+          <span>データ移行/保存</span>
+        </button>
+
+        <button id="openMasterModalBtn" title="★5武将管理" class="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 text-xs flex items-center gap-1.5 border border-amber-600/60 transition">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>★5武将設定</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ナビゲーションタブ -->
+    <div class="max-w-6xl mx-auto px-4 flex space-x-1 border-t border-sengoku-border/40 overflow-x-auto text-xs sm:text-sm no-scrollbar">
+      <button class="nav-tab active-tab px-3.5 py-2.5 font-bold border-b-2 border-amber-500 text-amber-300 flex items-center gap-1.5 whitespace-nowrap" data-tab="tab-record">
+        <i class="fa-solid fa-feather-pointed"></i> 登用入力
+      </button>
+      <button class="nav-tab px-3.5 py-2.5 font-medium text-stone-400 hover:text-stone-200 border-b-2 border-transparent flex items-center gap-1.5 whitespace-nowrap" data-tab="tab-stats">
+        <i class="fa-solid fa-chart-pie"></i> 集計・分析
+      </button>
+      <button class="nav-tab px-3.5 py-2.5 font-medium text-stone-400 hover:text-stone-200 border-b-2 border-transparent flex items-center gap-1.5 whitespace-nowrap" data-tab="tab-history">
+        <i class="fa-solid fa-scroll"></i> 履歴管理 (<span id="tabHistoryCount">0</span>)
+      </button>
+      <button class="nav-tab px-3.5 py-2.5 font-medium text-stone-400 hover:text-stone-200 border-b-2 border-transparent flex items-center gap-1.5 whitespace-nowrap" data-tab="tab-billing">
+        <i class="fa-solid fa-yen-sign"></i> 課金管理
+      </button>
+      <button class="nav-tab px-3.5 py-2.5 font-medium text-stone-400 hover:text-stone-200 border-b-2 border-transparent flex items-center gap-1.5 whitespace-nowrap" data-tab="tab-simulator">
+        <i class="fa-solid fa-dice"></i> 登用祈願所
+      </button>
+    </div>
+  </header>
+
+  <!-- メイン画面 -->
+  <main class="max-w-6xl mx-auto px-3 sm:px-4 mt-5">
+
+    <!-- =========================================================
+         TAB 1: 登用登録 (手動入力を極力簡単に・ポップアップなしで即登録)
+         ========================================================= -->
+    <div id="tab-record" class="tab-pane space-y-5">
+      
+      <!-- 天井 & リアルタイムステータスパネル -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-3">
+        <!-- 名将天井カウンター (30連) -->
+        <div class="bg-gradient-to-b from-stone-900 to-sengoku-panel p-3 rounded-xl border border-amber-500/40 relative overflow-hidden shadow">
+          <div class="flex items-center justify-between text-[11px] text-amber-400 font-bold mb-1">
+            <span>名将 ★5天井まで</span>
+            <span class="px-1.5 py-0.2 bg-amber-500/20 rounded text-[10px]">30連仕様</span>
+          </div>
+          <div class="flex items-baseline space-x-1.5">
+            <span id="pityCount" class="text-2xl sm:text-3xl font-extrabold text-amber-300">30</span>
+            <span class="text-stone-400 text-xs">/ 30 連</span>
+          </div>
+          <div class="w-full bg-stone-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div id="pityBar" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p class="text-[10px] text-stone-400 mt-2">前回★5から <span id="sinceLast5Star" class="text-stone-100 font-bold">0</span> 連経過</p>
+        </div>
+
+        <!-- 低排出(裏天井)カウンター (高排出5連続で次回低排出確定) -->
+        <div class="bg-gradient-to-b from-stone-900 to-sengoku-panel p-3 rounded-xl border border-rose-500/40 relative overflow-hidden shadow">
+          <div class="flex items-center justify-between text-[11px] text-rose-300 font-bold mb-1">
+            <span>低排出(裏天井)</span>
+            <span class="px-1.5 py-0.2 bg-rose-500/20 text-rose-200 rounded text-[9px]">高排出5連仕様</span>
+          </div>
+          <div class="flex items-baseline space-x-1">
+            <span id="lowPityCurrent" class="text-2xl sm:text-3xl font-extrabold text-rose-400">0</span>
+            <span class="text-stone-400 text-xs">/ 5 連高排出</span>
+          </div>
+          <div class="w-full bg-stone-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div id="lowPityBar" class="bg-gradient-to-r from-rose-500 to-pink-400 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="lowPityStatusMsg" class="text-[10px] text-stone-400 mt-2 truncate">低排出まで あと <span class="text-rose-300 font-bold">5</span> 体★5</p>
+        </div>
+
+        <!-- 覇業報酬天井 (20回上限・10回確定) -->
+        <div class="bg-sengoku-panel p-3 rounded-xl border border-sengoku-border relative overflow-hidden">
+          <div class="flex items-center justify-between text-[11px] text-red-300 font-bold mb-1">
+            <span>覇業報酬 天井進捗</span>
+            <span class="text-[10px] text-stone-400">10連確定</span>
+          </div>
+          <div class="flex items-baseline space-x-1">
+            <span id="hogyoPityCount" class="text-2xl sm:text-3xl font-extrabold text-red-400">10</span>
+            <span class="text-stone-400 text-xs">連 (計<span id="hogyoTotal">0</span>/20)</span>
+          </div>
+          <div class="w-full bg-stone-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div id="hogyoPityBar" class="bg-red-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p class="text-[10px] text-stone-400 mt-2">1回398小判 / ★5確定</p>
+        </div>
+
+        <!-- 選択シーズン登用数 & ★5率 -->
+        <div class="bg-sengoku-panel p-3 rounded-xl border border-sengoku-border">
+          <p class="text-[11px] text-stone-400 mb-1">総ガチャ回数 / ★5率</p>
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline space-x-1">
+              <span id="dashTotalPulls" class="text-2xl sm:text-3xl font-extrabold text-stone-100">0</span>
+              <span class="text-stone-400 text-xs">回</span>
+            </div>
+            <span id="dashStar5Rate" class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">0.0%</span>
+          </div>
+          <p class="text-[10px] text-stone-400 mt-2.5">
+            ★5: <span id="dashStar5Count" class="text-amber-400 font-bold">0</span>体 (高: <span id="dashHighCount" class="text-sky-300 font-semibold">0</span> / 低: <span id="dashLowCount" class="text-rose-400 font-semibold">0</span>)
+          </p>
+        </div>
+
+        <!-- 使用小判 & 登用状 -->
+        <div class="bg-sengoku-panel p-3 rounded-xl border border-sengoku-border">
+          <p class="text-[11px] text-stone-400 mb-1">消費小判 / 登用状</p>
+          <div class="flex items-baseline space-x-1">
+            <span id="dashTotalKoban" class="text-xl sm:text-2xl font-extrabold text-amber-400">0</span>
+            <span class="text-stone-400 text-xs">小判</span>
+          </div>
+          <p class="text-[10px] text-stone-400 mt-2.5 flex items-center justify-between">
+            <span>登用状: <strong id="dashTotalTickets" class="text-stone-200">0</strong></span>
+            <span>課金: <strong id="dashTotalBilled" class="text-emerald-400">¥0</strong></span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 入力フォームカード -->
+      <div class="bg-sengoku-panel p-4 sm:p-6 rounded-2xl border border-sengoku-border shadow-xl">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-sengoku-border/60">
+          <h2 class="text-sm sm:text-base font-bold text-stone-100 flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+            ガチャ記録を登録
+          </h2>
+          <span class="text-[11px] text-stone-400 hidden sm:inline">※確認アラートなし・登録後すぐ集計に反映されます</span>
+        </div>
+
+        <form id="recordForm" class="space-y-4">
+          <!-- 1行目: 日付・シーズン・ガチャ種別 -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-stone-300 mb-1">
+                登録日 <span class="text-[10px] text-stone-400">(時刻なしOK)</span>
+              </label>
+              <input type="date" id="formDate" required class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-stone-300 mb-1">シーズン</label>
+              <select id="formSeason" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500">
+                <option value="S1">S1</option>
+                <option value="S2">S2</option>
+                <option value="S3">S3</option>
+                <option value="S4">S4</option>
+                <option value="S5" selected>S5</option>
+                <option value="S6">S6</option>
+                <option value="S7">S7</option>
+                <option value="S8">S8</option>
+                <option value="S9">S9</option>
+                <option value="S10">S10</option>
+                <option value="PK">PKシーズン</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-stone-300 mb-1">ガチャの種類</label>
+              <select id="formGachaType" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500">
+                <option value="名将登用" selected>名将登用 (通常)</option>
+                <option value="シーズン限定ガチャ">シーズン限定ガチャ</option>
+                <option value="期間限定ガチャ">期間限定・割引ガチャ</option>
+                <option value="覇業報酬ガチャ">覇業報酬ガチャ (398小判)</option>
+                <option value="実績報酬ガチャ">実績報酬ガチャ (無料★5確定)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 2行目: 登用方法 (プリセットボタンによる簡単入力) -->
+          <div>
+            <label class="block text-xs font-medium text-stone-300 mb-1.5">登用方法 (タップで自動設定)</label>
+            <div class="grid grid-cols-2 sm:grid-cols-6 gap-2" id="methodPresetContainer">
+              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition active" 
+                data-method="無料1回" data-pulls="1" data-koban="0" data-tickets="0">
+                <span class="block font-bold text-amber-300">無料 1回</span>
+                <span class="text-[10px] text-stone-400">0小判 / 0枚</span>
+              </button>
+              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition" 
+                data-method="半額1回" data-pulls="1" data-koban="99" data-tickets="0">
+                <span class="block font-bold text-amber-300">半額 1回</span>
+                <span class="text-[10px] text-stone-400">99小判</span>
+              </button>
+              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition" 
+                data-method="通常1回" data-pulls="1" data-koban="198" data-tickets="0">
+                <span class="block font-bold">通常 1回</span>
+                <span class="text-[10px] text-stone-400">198小判</span>
+              </button>
+              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition" 
+                data-method="通常5回" data-pulls="5" data-koban="948" data-tickets="0">
+                <span class="block font-bold text-yellow-400">通常 5回</span>
+                <span class="text-[10px] text-stone-400">948小判</span>
+              </button>
+              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition" 
+                data-method="登用状1回" data-pulls="1" data-koban="0" data-tickets="1">
+                <span class="block font-bold text-sky-400">登用状 1回</span>
+                <span class="text-[10px] text-stone-400">1枚消費</span>
+              </button>
+              <button type="button" class="method-btn p-2 rounded-lg border border-stone-700 bg-stone-900 text-xs font-medium text-stone-200 text-center hover:border-amber-500 transition" 
+                data-method="登用状5回" data-pulls="5" data-koban="0" data-tickets="5">
+                <span class="block font-bold text-sky-400">登用状 5回</span>
+                <span class="text-[10px] text-stone-400">5枚消費</span>
+              </button>
+            </div>
+            
+            <!-- 5連まとめ引きセット数コントローラー -->
+            <div id="multiSetRow" class="hidden mt-2 p-2 rounded-lg bg-stone-900/90 border border-amber-500/30 flex items-center justify-between text-xs">
+              <span class="text-amber-300 font-bold flex items-center gap-1.5">
+                <i class="fa-solid fa-layer-group"></i> 5連をまとめて引く回数:
+              </span>
+              <div class="flex items-center space-x-2">
+                <select id="formMultiSets" class="bg-stone-950 border border-amber-500/60 rounded px-2.5 py-1 text-amber-300 font-bold">
+                  <option value="1">1回分 (5連 / 948小判)</option>
+                  <option value="2">2回分 (10連 / 1,896小判)</option>
+                  <option value="3">3回分 (15連 / 2,844小判)</option>
+                  <option value="4">4回分 (20連 / 3,792小判)</option>
+                  <option value="5">5回分 (25連 / 4,740小判)</option>
+                  <option value="6">6回分 (30連天井分 / 5,688小判)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 消費数手動微調整 (必要に応じて) -->
+          <div class="grid grid-cols-3 gap-3 bg-stone-900/60 p-3 rounded-xl border border-sengoku-border/50 text-xs">
+            <div>
+              <span class="text-stone-400 block mb-1">ガチャ回数</span>
+              <input type="number" id="formPulls" min="1" max="100" value="1" class="w-full bg-stone-900 border border-stone-700 rounded px-2.5 py-1.5 text-stone-100 font-bold text-center">
+            </div>
+            <div>
+              <span class="text-stone-400 block mb-1">消費小判</span>
+              <input type="number" id="formKoban" min="0" value="0" class="w-full bg-stone-900 border border-stone-700 rounded px-2.5 py-1.5 text-amber-300 font-bold text-center">
+            </div>
+            <div>
+              <span class="text-stone-400 block mb-1">消費登用状</span>
+              <input type="number" id="formTickets" min="0" value="0" class="w-full bg-stone-900 border border-stone-700 rounded px-2.5 py-1.5 text-sky-300 font-bold text-center">
+            </div>
+          </div>
+
+          <!-- 排出結果セクション (★4・★3は手軽に入力、★5は複数武将・高/低排出区分登録) -->
+          <div class="border border-sengoku-border rounded-xl p-3 sm:p-4 bg-stone-950/60 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-stone-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-users text-amber-400"></i> 排出結果の入力
+              </span>
+              <span class="text-[11px] text-stone-400">★4・★3は個数のみ入力でOK</span>
+            </div>
+
+            <!-- ★4 & ★3 カウンター -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-stone-900 p-2.5 rounded-lg border border-purple-900/50 flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-purple-300">★4 良将</span>
+                  <span class="text-[10px] text-stone-500 block">名前省略可</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <button type="button" onclick="adjustCount('formStar4Count', -1)" class="w-7 h-7 rounded bg-stone-800 text-stone-300 text-sm font-bold active:scale-95">-</button>
+                  <input type="number" id="formStar4Count" min="0" max="20" value="0" class="w-10 bg-stone-950 border border-stone-700 rounded text-center text-xs font-bold py-1 text-purple-300">
+                  <button type="button" onclick="adjustCount('formStar4Count', 1)" class="w-7 h-7 rounded bg-stone-800 text-stone-300 text-sm font-bold active:scale-95">+</button>
+                </div>
+              </div>
+
+              <div class="bg-stone-900 p-2.5 rounded-lg border border-blue-900/40 flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-blue-300">★3 番頭</span>
+                  <span class="text-[10px] text-stone-500 block">名前省略可</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <button type="button" onclick="adjustCount('formStar3Count', -1)" class="w-7 h-7 rounded bg-stone-800 text-stone-300 text-sm font-bold active:scale-95">-</button>
+                  <input type="number" id="formStar3Count" min="0" max="20" value="1" class="w-10 bg-stone-950 border border-stone-700 rounded text-center text-xs font-bold py-1 text-blue-300">
+                  <button type="button" onclick="adjustCount('formStar3Count', 1)" class="w-7 h-7 rounded bg-stone-800 text-stone-300 text-sm font-bold active:scale-95">+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ★5排出武将入力 (複数登録対応) -->
+            <div class="pt-2 border-t border-sengoku-border/40">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-amber-300 flex items-center gap-1">
+                  <i class="fa-solid fa-star text-amber-400"></i> ★5排出武将 (出なかった場合は「★5なし」のまま)
+                </span>
+                <button type="button" id="addStar5Btn" class="text-[11px] px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+                  <i class="fa-solid fa-plus"></i> ★5武将を追加
+                </button>
+              </div>
+
+              <div id="star5EntriesList" class="space-y-2">
+                <!-- 動的に★5入力行が追加される (初期状態で1行常時表示) -->
+              </div>
+            </div>
+          </div>
+
+          <!-- メモ欄 -->
+          <div>
+            <label class="block text-xs font-medium text-stone-300 mb-1">備考・メモ (任意)</label>
+            <input type="text" id="formMemo" placeholder="例: シーズン開幕ダッシュ、天井直前排出、神引きなど" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-xs focus:outline-none focus:border-amber-500">
+          </div>
+
+          <!-- 送信ボタン / リセット -->
+          <div class="flex items-center justify-between pt-2">
+            <button type="button" id="resetFormBtn" class="px-3 py-2 text-xs text-stone-400 hover:text-stone-200">
+              <i class="fa-solid fa-arrow-rotate-left mr-1"></i> リセット
+            </button>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 font-bold text-stone-950 text-sm shadow-lg flex items-center gap-2 cursor-pointer transition">
+              <i class="fa-solid fa-check"></i> 登録する (即時反映)
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 最近登録した★5武将クイックログ -->
+      <div class="bg-sengoku-panel p-4 rounded-xl border border-sengoku-border">
+        <h3 class="text-xs font-bold text-amber-300 mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-crown text-amber-400"></i> 直近の★5排出履歴
+        </h3>
+        <div id="recentStar5Container" class="flex gap-2 overflow-x-auto pb-1 text-xs">
+          <!-- JS生成 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 2: 集計 & 分析 (グラフ縦軸調整・高低排出割合)
+         ========================================================= -->
+    <div id="tab-stats" class="tab-pane hidden space-y-5">
+      <!-- 集計概要カード -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-sengoku-panel p-3.5 rounded-xl border border-sengoku-border">
+          <span class="text-xs text-stone-400 block mb-0.5">総ガチャ回数</span>
+          <span id="stTotalPulls" class="text-2xl font-bold text-stone-100">0</span>
+        </div>
+        <div class="bg-sengoku-panel p-3.5 rounded-xl border border-sengoku-border">
+          <span class="text-xs text-stone-400 block mb-0.5">総消費小判</span>
+          <span id="stTotalKoban" class="text-2xl font-bold text-amber-400">0</span>
+        </div>
+        <div class="bg-sengoku-panel p-3.5 rounded-xl border border-sengoku-border">
+          <span class="text-xs text-stone-400 block mb-0.5">★5排出数 (実測率)</span>
+          <div class="flex items-baseline gap-1.5">
+            <span id="stTotalStar5" class="text-2xl font-bold text-yellow-300">0</span>
+            <span id="stRateStar5" class="text-xs font-bold text-amber-400">(0.0%)</span>
+          </div>
+        </div>
+        <div class="bg-sengoku-panel p-3.5 rounded-xl border border-sengoku-border">
+          <span class="text-xs text-stone-400 block mb-0.5">高排出 / 低排出</span>
+          <div class="text-xs mt-1 space-y-0.5">
+            <span class="block text-sky-300">高排出: <strong id="stHighStar5" class="text-sm">0</strong> 体</span>
+            <span class="block text-rose-300">低排出: <strong id="stLowStar5" class="text-sm">0</strong> 体</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- グラフ分析エリア (縦軸調整コントロール付) -->
+      <div class="bg-sengoku-panel p-4 sm:p-5 rounded-2xl border border-sengoku-border space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-sengoku-border">
+          <div>
+            <h3 class="text-sm font-bold text-stone-100 flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-line text-amber-400"></i> ガチャ推移・★5排出率グラフ
+            </h3>
+            <p class="text-[11px] text-stone-400">Pulllogの要望を反映：縦軸の範囲や表示モードを自由に調整可能</p>
+          </div>
+          
+          <!-- グラフ調整コントローラー -->
+          <div class="flex items-center gap-2 text-xs">
+            <select id="chartMetricSelect" class="bg-stone-900 border border-stone-700 rounded px-2.5 py-1 text-stone-200">
+              <option value="rate">★5 排出率推移 (%)</option>
+              <option value="pulls">月別・シーズン別 ガチャ回数</option>
+              <option value="koban">小判消費量 推移</option>
+            </select>
+            <div class="flex items-center gap-1 bg-stone-900 border border-stone-700 px-2 py-1 rounded">
+              <span class="text-[11px] text-stone-400">Y軸上限:</span>
+              <input type="number" id="chartYMaxInput" placeholder="自動" class="w-14 bg-stone-950 border border-stone-700 text-stone-100 text-center rounded px-1 text-xs">
+              <button id="applyChartScaleBtn" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 text-[10px]">適用</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Canvas -->
+        <div class="relative h-64 sm:h-72 w-full">
+          <canvas id="analysisChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 武将別排出数 & 高/低排出ランキング -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-sengoku-panel p-4 rounded-xl border border-sengoku-border">
+          <h4 class="text-xs font-bold text-stone-200 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-award text-amber-400"></i> ★5武将 排出ランキング (獲得数・凸数)
+          </h4>
+          <div id="officerRankingList" class="space-y-2 max-h-72 overflow-y-auto pr-1 text-xs">
+            <!-- JSレンダリング -->
+          </div>
+        </div>
+
+        <div class="bg-sengoku-panel p-4 rounded-xl border border-sengoku-border">
+          <h4 class="text-xs font-bold text-stone-200 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-pie text-sky-400"></i> 高排出・低排出 比率
+          </h4>
+          <div class="relative h-56 flex items-center justify-center">
+            <canvas id="distributionPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 3: 履歴一覧・編集・選択削除
+         ========================================================= -->
+    <div id="tab-history" class="tab-pane hidden space-y-4">
+      <div class="bg-sengoku-panel p-3.5 sm:p-4 rounded-xl border border-sengoku-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-stone-100">登用履歴一覧</h3>
+          <p class="text-xs text-stone-400">1回のガチャ実行を1件として保持。★5複数排出も紐づけて記録。</p>
+        </div>
+        
+        <!-- 操作・フィルター -->
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="historyFilterGacha" class="bg-stone-900 text-xs text-stone-200 px-2.5 py-1.5 rounded-lg border border-stone-700">
+            <option value="ALL">全ガチャ</option>
+            <option value="名将登用">名将登用</option>
+            <option value="覇業報酬ガチャ">覇業報酬</option>
+            <option value="シーズン限定ガチャ">シーズン限定</option>
+            <option value="期間限定ガチャ">期間限定</option>
+            <option value="実績報酬ガチャ">実績報酬</option>
+          </select>
+          <button id="mergeSelectedHistoryBtn" class="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 text-amber-300 border border-amber-600/70 text-xs font-bold transition flex items-center gap-1">
+            <i class="fa-solid fa-code-merge"></i>選択結合
+          </button>
+          <button id="deleteSelectedHistoryBtn" class="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-red-400 border border-stone-700 text-xs transition">
+            <i class="fa-solid fa-trash-can mr-1"></i>選択削除
+          </button>
+          <button id="deleteAllHistoryBtn" class="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 text-red-200 border border-red-800 text-xs transition">
+            全履歴消去
+          </button>
+        </div>
+      </div>
+
+      <!-- テーブル -->
+      <div class="bg-sengoku-panel rounded-xl border border-sengoku-border overflow-hidden shadow">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-stone-900/90 text-stone-400 border-b border-sengoku-border uppercase tracking-wider">
+              <tr>
+                <th class="py-2.5 px-3 text-center w-8">
+                  <input type="checkbox" id="selectAllCheckbox" class="rounded bg-stone-800 border-stone-700">
+                </th>
+                <th class="py-2.5 px-3">登録日 / 期</th>
+                <th class="py-2.5 px-3">ガチャ種別 / 方式</th>
+                <th class="py-2.5 px-3 text-center">回数</th>
+                <th class="py-2.5 px-3">排出★5武将 (高/低)</th>
+                <th class="py-2.5 px-3 text-center">★4/★3</th>
+                <th class="py-2.5 px-3 text-right">小判/登用状</th>
+                <th class="py-2.5 px-3">備考</th>
+                <th class="py-2.5 px-3 text-center w-16">操作</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-sengoku-border/50 text-stone-300">
+              <!-- JSレンダリング -->
+            </tbody>
+          </table>
+        </div>
+        <div id="historyEmptyMsg" class="p-8 text-center text-stone-500 text-xs hidden">
+          条件に一致する登用履歴がありません。
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 4: 課金管理
+         ========================================================= -->
+    <div id="tab-billing" class="tab-pane hidden space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- 課金入力カード -->
+        <div class="sm:col-span-1 bg-sengoku-panel p-4 sm:p-5 rounded-2xl border border-sengoku-border shadow">
+          <h3 class="text-sm font-bold text-stone-100 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-plus text-emerald-400"></i> 課金記録を追加
+          </h3>
+          <form id="billingForm" class="space-y-3 text-xs">
+            <div>
+              <label class="block text-stone-400 mb-1">課金日</label>
+              <input type="date" id="billDate" required class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-100">
+            </div>
+            <div>
+              <label class="block text-stone-400 mb-1">シーズン</label>
+              <select id="billSeason" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-100">
+                <option value="S1">S1</option>
+                <option value="S2">S2</option>
+                <option value="S3">S3</option>
+                <option value="S4">S4</option>
+                <option value="S5" selected>S5</option>
+                <option value="S6">S6</option>
+                <option value="S7">S7</option>
+                <option value="S8">S8</option>
+                <option value="S9">S9</option>
+                <option value="S10">S10</option>
+                <option value="PK">PKシーズン</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-stone-400 mb-1">課金額 (円)</label>
+              <input type="number" id="billAmount" min="1" step="10" placeholder="例: 10000" required class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-emerald-300 font-bold">
+            </div>
+            <div>
+              <label class="block text-stone-400 mb-1">内容・メモ</label>
+              <input type="text" id="billMemo" placeholder="例: 玉壁パック、パス購入" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2 text-stone-200">
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs shadow transition mt-2">
+              課金を登録
+            </button>
+          </form>
+        </div>
+
+        <!-- 課金履歴 & 集計カード -->
+        <div class="sm:col-span-2 bg-sengoku-panel p-4 sm:p-5 rounded-2xl border border-sengoku-border space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-sengoku-border">
+            <h3 class="text-sm font-bold text-stone-100">課金履歴・シーズン別集計</h3>
+            <span class="text-xs text-stone-400">総課金額: <strong id="totalBilledDisplay" class="text-emerald-400 text-sm">¥0</strong></span>
+          </div>
+
+          <div class="overflow-x-auto max-h-80 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-stone-900 text-stone-400">
+                <tr>
+                  <th class="py-2 px-3">日付</th>
+                  <th class="py-2 px-3">シーズン</th>
+                  <th class="py-2 px-3 text-right">金額</th>
+                  <th class="py-2 px-3">内容</th>
+                  <th class="py-2 px-3 text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody id="billingTableBody" class="divide-y divide-sengoku-border/40 text-stone-300">
+                <!-- JSレンダリング -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 5: 登用祈願所 (シミュレーター)
+         ========================================================= -->
+    <div id="tab-simulator" class="tab-pane hidden space-y-5">
+      <div class="bg-sengoku-panel p-5 rounded-2xl border border-sengoku-border">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-sengoku-border">
+          <div>
+            <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-torii-gate"></i> 登用祈願所 (名将シミュレーター)
+            </h3>
+            <p class="text-xs text-stone-400">公称確率（★5: 5.6%、30連天井確定）に基づく排出シミュレーション</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-stone-400">天井まで残: <strong id="simPityRemaining" class="text-amber-300 font-bold">30</strong> 連</span>
+            <button id="resetSimBtn" class="px-2.5 py-1 rounded bg-stone-800 text-stone-300 text-xs hover:bg-stone-700">リセット</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-3 my-5">
+          <button id="simPull1" class="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 border border-stone-600 font-bold text-xs text-stone-200">
+            単発登用 (198小判)
+          </button>
+          <button id="simPull5" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 font-bold text-xs text-stone-950 shadow">
+            5連登用 (948小判)
+          </button>
+          <button id="simPullToPity" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 font-bold text-xs text-white">
+            天井まで一括 (最大30連)
+          </button>
+        </div>
+
+        <!-- 排出結果カードグリッド -->
+        <div id="simResultsGrid" class="min-h-[140px] p-4 bg-stone-950 rounded-xl border border-stone-800 flex flex-wrap gap-2.5 items-center justify-center">
+          <p class="text-xs text-stone-500">ボタンを押して登用を実行してください</p>
+        </div>
+
+        <!-- シミュレーター統計 -->
+        <div class="mt-4 pt-3 border-t border-sengoku-border/60 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+          <div class="p-2 bg-stone-900 rounded">
+            <span class="text-stone-400 block text-[10px]">試行回数</span>
+            <span id="simStatPulls" class="text-sm font-bold text-stone-100">0</span> 回
+          </div>
+          <div class="p-2 bg-stone-900 rounded">
+            <span class="text-stone-400 block text-[10px]">小判換算</span>
+            <span id="simStatKoban" class="text-sm font-bold text-amber-400">0</span>
+          </div>
+          <div class="p-2 bg-stone-900 rounded">
+            <span class="text-stone-400 block text-[10px]">★5獲得数</span>
+            <span id="simStatCount5" class="text-sm font-bold text-yellow-300">0</span> 体
+          </div>
+          <div class="p-2 bg-stone-900 rounded">
+            <span class="text-stone-400 block text-[10px]">★5実測確率</span>
+            <span id="simStatRate5" class="text-sm font-bold text-emerald-400">0.0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- =========================================================
+       モーダル群 (アラート代替 / 設定 / 編集)
+       ========================================================= -->
+
+  <!-- データ管理（JSONバックアップ / 復元 / PC・iPhone移行）モーダル -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-sengoku-panel border border-sengoku-border w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-sengoku-border">
+        <h3 class="text-sm font-bold text-stone-100 flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk text-amber-400"></i> データ保存・端末間移行
+        </h3>
+        <button id="closeSettingsBtn" class="text-stone-400 hover:text-white p-1 text-sm"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3 bg-stone-900/80 p-3.5 rounded-xl border border-stone-800">
+        <p class="text-stone-300 leading-relaxed text-[11px]">
+          Supabaseや複雑な外部サーバー設定は不要です。データはこの端末（ブラウザ）に自動保存されます。
+        </p>
+        <div class="p-2.5 rounded-lg bg-stone-950/70 border border-stone-800 text-stone-400 space-y-1">
+          <p class="font-bold text-amber-300 flex items-center gap-1">
+            <i class="fa-solid fa-mobile-screen-button"></i> PCとiPhoneで引き継ぐ方法:
+          </p>
+          <ol class="list-decimal list-inside space-y-0.5 text-[10px]">
+            <li>移行元の端末で「JSON書出」を押してファイルを保存</li>
+            <li>LINEやAirDrop、メール等で別端末へ送信</li>
+            <li>移行先の端末でこの画面を開き「JSON読込」を押すだけで完了！</li>
+          </ol>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button id="exportJsonBtn" class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 font-bold text-stone-950 flex items-center justify-center gap-1.5 shadow transition">
+            <i class="fa-solid fa-download"></i> データを書出 (保存)
+          </button>
+          <button id="importJsonBtn" class="flex-1 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold flex items-center justify-center gap-1.5 border border-stone-600 transition">
+            <i class="fa-solid fa-upload"></i> データを読込 (復元)
+          </button>
+          <input type="file" id="importJsonInput" accept=".json" class="hidden">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 履歴編集モーダル -->
+  <div id="editHistoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-sengoku-panel border border-sengoku-border w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-3 text-xs max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-sengoku-border">
+        <h3 class="text-sm font-bold text-stone-100">履歴の編集</h3>
+        <button id="closeEditModalBtn" class="text-stone-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <input type="hidden" id="editEntryId">
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-stone-400 mb-1">登録日</label>
+          <input type="date" id="editDate" class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-1.5 text-stone-100">
+        </div>
+        <div>
+          <label class="block text-stone-400 mb-1">シーズン</label>
+          <select id="editSeason" class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-1.5 text-stone-100">
+            <option value="S1">S1</option>
+            <option value="S2">S2</option>
+            <option value="S3">S3</option>
+            <option value="S4">S4</option>
+            <option value="S5">S5</option>
+            <option value="S6">S6</option>
+            <option value="S7">S7</option>
+            <option value="S8">S8</option>
+            <option value="S9">S9</option>
+            <option value="S10">S10</option>
+            <option value="PK">PKシーズン</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-stone-400 mb-1">消費小判</label>
+          <input type="number" id="editKoban" class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-1.5 text-stone-100">
+        </div>
+        <div>
+          <label class="block text-stone-400 mb-1">消費登用状</label>
+          <input type="number" id="editTickets" class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-1.5 text-stone-100">
+        </div>
+      </div>
+
+      <!-- 排出★5武将の編集エリア -->
+      <div class="border border-stone-800 rounded-lg p-2.5 bg-stone-950/60 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-amber-300">排出★5武将の編集</span>
+          <button type="button" id="addEditStar5Btn" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30">
+            + ★5追加
+          </button>
+        </div>
+        <div id="editStar5Container" class="space-y-1.5">
+          <!-- JSで動的レンダリング -->
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-stone-400 mb-1">備考</label>
+        <input type="text" id="editMemo" class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-1.5 text-stone-100">
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="cancelEditBtn" class="px-3 py-1.5 rounded bg-stone-800 text-stone-300">キャンセル</button>
+        <button id="saveEditBtn" class="px-4 py-1.5 rounded bg-amber-500 font-bold text-stone-950">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ★5武将マスター管理モーダル -->
+  <div id="masterModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-sengoku-panel border border-sengoku-border w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] flex flex-col text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-sengoku-border flex-shrink-0">
+        <h3 class="text-sm font-bold text-stone-100 flex items-center gap-2">
+          <i class="fa-solid fa-user-gear text-amber-400"></i> ★5武将マスター管理
+        </h3>
+        <button id="closeMasterModalBtn" class="text-stone-400 hover:text-white p-1 text-sm"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- 新規武将の追加フォーム -->
+      <div class="bg-stone-900/90 p-3 rounded-xl border border-stone-800 space-y-2 flex-shrink-0">
+        <span class="font-bold text-stone-200 block text-[11px]">新しい★5武将を追加</span>
+        <div class="flex gap-2">
+          <input type="text" id="newMasterName" placeholder="武将名 (例: 浅井長政)" class="flex-1 bg-stone-950 border border-stone-700 rounded-lg px-2.5 py-1.5 text-stone-100 text-xs focus:outline-none focus:border-amber-500">
+          <select id="newMasterTier" class="bg-stone-950 border border-stone-700 rounded-lg px-2 py-1.5 text-amber-300 font-bold text-xs">
+            <option value="高排出">高排出</option>
+            <option value="低排出">低排出</option>
+          </select>
+          <button id="addMasterBtn" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold rounded-lg whitespace-nowrap transition">
+            追加
+          </button>
+        </div>
+      </div>
+
+      <!-- 並び替えクイックツールバー -->
+      <div class="flex items-center justify-between px-1 flex-shrink-0 text-[11px] text-stone-400">
+        <span class="flex items-center gap-1"><i class="fa-solid fa-arrow-down-up-across-line text-amber-400"></i> 並び替え:</span>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="sortMasterOfficers('kana')" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 rounded border border-stone-700 transition">
+            五十音順
+          </button>
+          <button type="button" onclick="sortMasterOfficers('tier')" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 rounded border border-stone-700 transition">
+            排出区分順 (低排出優先)
+          </button>
+        </div>
+      </div>
+
+      <!-- 登録武将リスト -->
+      <div class="flex-1 overflow-y-auto pr-1 space-y-1.5" id="masterOfficersList">
+        <!-- JSでレンダリング -->
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-sengoku-border flex-shrink-0">
+        <button id="resetMasterDefaultBtn" class="text-stone-500 hover:text-amber-400 text-[11px]">
+          初期データに戻す
+        </button>
+        <button id="finishMasterBtn" class="px-4 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200">
+          完了
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認ダイアログ (alert/confirm禁止規約対応) -->
+  <div id="confirmDialog" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-sengoku-panel border border-sengoku-border w-full max-w-sm rounded-xl p-5 shadow-2xl space-y-3 text-xs">
+      <h3 id="confirmDialogTitle" class="text-sm font-bold text-stone-100">確認</h3>
+      <p id="confirmDialogMessage" class="text-stone-300 leading-relaxed"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="confirmCancelBtn" class="px-3 py-1.5 rounded bg-stone-800 text-stone-300">キャンセル</button>
+        <button id="confirmOkBtn" class="px-4 py-1.5 rounded bg-red-700 font-bold text-white">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       JavaScript ロジック (V3 コア実装)
+       ========================================================= -->
+  <script>
+    /* ---------------------------------------------------------
+       天井計算ロジック（5連中の排出順・低排出裏天井を追跡）
+       --------------------------------------------------------- */
+    function calculatePity() {
+      // 日付昇順（古い順）に履歴を走査して天井カウントを追跡
+      const sorted = [...state.history].sort((a, b) => {
+        const da = new Date(a.date).getTime();
+        const db = new Date(b.date).getTime();
+        if (da !== db) return da - db;
+        return (a.createdAt || 0) - (b.createdAt || 0);
+      });
+
+      let meishoPity = 0;       // 名将天井（前回★5からの連数）
+      let hogyoCount = 0;       // 覇業ガチャの総回数
+      let hogyoPity = 0;        // 覇業ガチャの天井カウント（10連で★5確定）
+      let highStreak = 0;       // 高排出★5の連続回数（裏天井追跡用）
+
+      sorted.forEach(item => {
+        const pulls = item.pulls || 1;
+        const star5s = item.star5List || [];
+
+        // 名将登用の30連天井計算
+        if (item.gachaType === "名将登用" || item.gachaType === "通常") {
+          if (star5s.length > 0) {
+            let lastOrder = pulls;
+            const orders = star5s.map(s => s.order).filter(o => o && o > 0);
+            if (orders.length > 0) {
+              lastOrder = Math.max(...orders);
+              if (lastOrder > pulls) lastOrder = pulls;
+            }
+            meishoPity = pulls - lastOrder;
+          } else {
+            meishoPity += pulls;
+          }
+        } else if (item.gachaType === "覇業報酬ガチャ") {
+          hogyoCount += pulls;
+          if (star5s.length > 0) {
+            let lastOrder = pulls;
+            const orders = star5s.map(s => s.order).filter(o => o && o > 0);
+            if (orders.length > 0) {
+              lastOrder = Math.max(...orders);
+              if (lastOrder > pulls) lastOrder = pulls;
+            }
+            hogyoPity = pulls - lastOrder;
+          } else {
+            hogyoPity += pulls;
+          }
+        }
+
+        // 名将ガチャにおける低排出（裏天井）の追跡
+        // 排出順（order）があればその順序で、なければ登録順で処理
+        if (item.gachaType === "名将登用" || item.gachaType === "通常") {
+          if (star5s.length > 0) {
+            const sortedStar5s = [...star5s].sort((x, y) => (x.order || 0) - (y.order || 0));
+            sortedStar5s.forEach(s => {
+              if (s.tier === "低排出") {
+                highStreak = 0; // 低排出が出たらカウントリセット
+              } else if (s.tier === "高排出") {
+                highStreak++;
+              }
+            });
+          }
+        }
+      });
+
+      // 名将天井の反映 (30連天井)
+      const remainingMeisho = Math.max(0, 30 - meishoPity);
+      document.getElementById("pityCount").textContent = remainingMeisho;
+      document.getElementById("sinceLast5Star").textContent = meishoPity;
+      const meishoPercent = Math.min(100, (meishoPity / 30) * 100);
+      document.getElementById("pityBar").style.width = meishoPercent + "%";
+
+      // 低排出（裏天井）の反映（高排出5連で次が低排出確定）
+      const lowPityEl = document.getElementById("lowPityCurrent");
+      const lowPityBar = document.getElementById("lowPityBar");
+      const lowPityMsg = document.getElementById("lowPityStatusMsg");
+
+      if (lowPityEl && lowPityBar && lowPityMsg) {
+        lowPityEl.textContent = highStreak;
+        const lowPityPercent = Math.min(100, (highStreak / 5) * 100);
+        lowPityBar.style.width = lowPityPercent + "%";
+
+        if (highStreak >= 5) {
+          lowPityMsg.innerHTML = `<span class="text-pink-400 font-extrabold animate-pulse">🔥 次回★5は低排出確定！</span>`;
+        } else {
+          const rem = 5 - highStreak;
+          lowPityMsg.innerHTML = `低排出まで あと <span class="text-rose-300 font-bold">${rem}</span> 体★5`;
+        }
+      }
+
+      // 覇業報酬天井の反映 (10連確定・上限20連)
+      const hogyoRemaining = Math.max(0, 10 - (hogyoPity % 10));
+      document.getElementById("hogyoPityCount").textContent = (hogyoCount >= 20) ? 0 : (hogyoRemaining === 0 ? 10 : hogyoRemaining);
+      document.getElementById("hogyoTotal").textContent = Math.min(20, hogyoCount);
+      const hogyoPercent = Math.min(100, ((10 - hogyoRemaining) / 10) * 100);
+      document.getElementById("hogyoPityBar").style.width = hogyoPercent + "%";
+    }
+
+    /* ---------------------------------------------------------
+       ダッシュボード・全体レンダリング
+       --------------------------------------------------------- */
+    function renderAll() {
+      const selectedSeason = document.getElementById("globalSeasonFilter").value;
+
+      let filteredHistory = state.history;
+      let filteredBilling = state.billing;
+
+      if (selectedSeason !== "ALL") {
+        filteredHistory = filteredHistory.filter(h => h.season === selectedSeason);
+        filteredBilling = filteredBilling.filter(b => b.season === selectedSeason);
+      }
+
+      // 統計計算
+      let totalPulls = 0;
+      let totalKoban = 0;
+      let totalTickets = 0;
+      let star5Count = 0;
+      let highCount = 0;
+      let lowCount = 0;
+
+      filteredHistory.forEach(h => {
+        totalPulls += (h.pulls || 0);
+        totalKoban += (h.koban || 0);
+        totalTickets += (h.tickets || 0);
+
+        if (Array.isArray(h.star5List)) {
+          h.star5List.forEach(s => {
+            star5Count++;
+            if (s.tier === "高排出") highCount++;
+            if (s.tier === "低排出") lowCount++;
+          });
+        }
+      });
+
+      const totalBilled = filteredBilling.reduce((sum, b) => sum + (b.amount || 0), 0);
+      const star5Rate = totalPulls > 0 ? ((star5Count / totalPulls) * 100).toFixed(2) : "0.0";
+
+      // ダッシュボードへの反映
+      document.getElementById("dashTotalPulls").textContent = totalPulls;
+      document.getElementById("dashStar5Rate").textContent = star5Rate + "%";
+      document.getElementById("dashStar5Count").textContent = star5Count;
+      document.getElementById("dashHighCount").textContent = highCount;
+      document.getElementById("dashLowCount").textContent = lowCount;
+      document.getElementById("dashTotalKoban").textContent = totalKoban.toLocaleString();
+      document.getElementById("dashTotalTickets").textContent = totalTickets;
+      document.getElementById("dashTotalBilled").textContent = "¥" + totalBilled.toLocaleString();
+
+      // 集計タブへの反映
+      document.getElementById("stTotalPulls").textContent = totalPulls;
+      document.getElementById("stTotalKoban").textContent = totalKoban.toLocaleString();
+      document.getElementById("stTotalStar5").textContent = star5Count;
+      document.getElementById("stRateStar5").textContent = `(${star5Rate}%)`;
+      document.getElementById("stHighStar5").textContent = highCount;
+      document.getElementById("stLowStar5").textContent = lowCount;
+
+      // タブバッジ
+      document.getElementById("tabHistoryCount").textContent = filteredHistory.length;
+
+      // 各テーブル・天井の再計算
+      calculatePity();
+      renderRecentStar5();
+      renderHistoryTable();
+      renderBillingTable();
+      renderOfficerRanking();
+
+      // グラフタブが表示されている場合は再描画
+      const statsTab = document.getElementById("tab-stats");
+      if (statsTab && !statsTab.classList.contains("hidden")) {
+        renderCharts();
+      }
+    }
+
+    function renderRecentStar5() {
+      const container = document.getElementById("recentStar5Container");
+      container.innerHTML = "";
+
+      const star5Logs = [];
+      state.history.forEach(h => {
+        if (Array.isArray(h.star5List)) {
+          h.star5List.forEach(s => {
+            star5Logs.push({
+              name: s.name,
+              tier: s.tier,
+              order: s.order,
+              date: h.date,
+              season: h.season
+            });
+          });
+        }
+      });
+
+      if (star5Logs.length === 0) {
+        container.innerHTML = `<span class="text-stone-500 py-1">まだ★5排出の記録はありません</span>`;
+        return;
+      }
+
+      star5Logs.slice(0, 8).forEach(log => {
+        const badge = document.createElement("div");
+        badge.className = `flex-shrink-0 px-2.5 py-1.5 rounded-lg border flex items-center gap-2 ${
+          log.tier === '低排出' 
+            ? 'bg-rose-950/40 border-rose-700/60 text-rose-200' 
+            : 'bg-amber-950/40 border-amber-600/50 text-amber-200'
+        }`;
+        badge.innerHTML = `
+          <div>
+            <div class="font-bold text-xs">${escapeHtml(log.name)}</div>
+            <div class="text-[10px] opacity-75">${escapeHtml(log.date)} (${escapeHtml(log.season)})</div>
+          </div>
+          <span class="text-[9px] px-1 py-0.5 rounded font-bold ${log.tier === '低排出' ? 'bg-rose-800 text-rose-100' : 'bg-amber-800 text-amber-100'}">${escapeHtml(log.tier)}</span>
+        `;
+        container.appendChild(badge);
+      });
+    }
+
+    /* ---------------------------------------------------------
+       履歴一覧テーブル レンダリング
+       --------------------------------------------------------- */
+    function renderHistoryTable() {
+      const selectedSeason = document.getElementById("globalSeasonFilter").value;
+      const filterGacha = document.getElementById("historyFilterGacha").value;
+      const tbody = document.getElementById("historyTableBody");
+      const emptyMsg = document.getElementById("historyEmptyMsg");
+
+      tbody.innerHTML = "";
+
+      let list = state.history;
+      if (selectedSeason !== "ALL") list = list.filter(h => h.season === selectedSeason);
+      if (filterGacha !== "ALL") list = list.filter(h => h.gachaType === filterGacha);
+
+      if (list.length === 0) {
+        emptyMsg.classList.remove("hidden");
+        return;
+      }
+      emptyMsg.classList.add("hidden");
+
+      list.forEach(h => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-stone-900/60 transition";
+
+        // ★5武将タグの作成 (何番目出の表示対応)
+        let s5Html = `<span class="text-stone-500">-</span>`;
+        if (h.star5List && h.star5List.length > 0) {
+          s5Html = h.star5List.map(s => `
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
+              s.tier === '低排出' ? 'bg-rose-900/40 border border-rose-700 text-rose-300' : 'bg-amber-900/40 border border-amber-600 text-amber-300'
+            } mr-1 mb-0.5">
+              ${s.order ? `<span class="text-[9px] bg-stone-950/80 px-1 rounded text-stone-300 font-mono">${s.order}番目</span>` : ''}
+              ${escapeHtml(s.name)}
+              <span class="text-[9px] opacity-75">(${escapeHtml(s.tier)})</span>
+            </span>
+          `).join("");
+        }
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-center">
+            <input type="checkbox" value="${h.id}" class="history-row-check rounded bg-stone-800 border-stone-700">
+          </td>
+          <td class="py-2.5 px-3 whitespace-nowrap">
+            <div class="font-bold text-stone-200">${escapeHtml(h.date)}</div>
+            <span class="text-[10px] text-amber-400 font-bold">${escapeHtml(h.season)}</span>
+          </td>
+          <td class="py-2.5 px-3 whitespace-nowrap">
+            <div class="font-medium text-stone-200">${escapeHtml(h.gachaType)}</div>
+          </td>
+          <td class="py-2.5 px-3 text-center font-bold text-stone-100">
+            ${h.pulls}回
+          </td>
+          <td class="py-2.5 px-3">
+            ${s5Html}
+          </td>
+          <td class="py-2.5 px-3 text-center whitespace-nowrap">
+            <span class="text-purple-300">★4: ${h.star4Count || 0}</span> / 
+            <span class="text-blue-300">★3: ${h.star3Count || 0}</span>
+          </td>
+          <td class="py-2.5 px-3 text-right whitespace-nowrap">
+            <div class="font-bold text-amber-400">${(h.koban || 0).toLocaleString()} <span class="text-[10px] text-stone-400">小判</span></div>
+            ${h.tickets ? `<div class="text-[10px] text-sky-400">登用状: ${h.tickets}枚</div>` : ''}
+          </td>
+          <td class="py-2.5 px-3 text-stone-400 max-w-[120px] truncate" title="${escapeHtml(h.memo || '')}">
+            ${escapeHtml(h.memo || '-')}
+          </td>
+          <td class="py-2.5 px-3 text-center whitespace-nowrap">
+            <button onclick="openEditHistoryModal('${h.id}')" class="text-stone-400 hover:text-amber-400 p-1 mr-1" title="編集">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button onclick="deleteSingleHistory('${h.id}')" class="text-stone-400 hover:text-red-400 p-1" title="削除">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function deleteSingleHistory(id) {
+      showConfirmDialog("履歴の削除", "この登用履歴を削除しますか？", () => {
+        state.history = state.history.filter(h => h.id !== id);
+        saveStorageData();
+        renderAll();
+        showToast("履歴を削除しました", "red");
+      });
+    }
+
+    /* ---------------------------------------------------------
+       選択履歴の結合機能
+       --------------------------------------------------------- */
+    function mergeSelectedHistories() {
+      const checkedBoxes = document.querySelectorAll(".history-row-check:checked");
+      if (checkedBoxes.length < 2) {
+        showToast("結合するには2件以上の履歴を選択してください", "red");
+        return;
+      }
+
+      showConfirmDialog("履歴の結合", `選択した ${checkedBoxes.length} 件の履歴を1件に合算・結合しますか？`, () => {
+        const selectedIds = new Set(Array.from(checkedBoxes).map(cb => cb.value));
+        const targets = state.history.filter(h => selectedIds.has(h.id));
+
+        if (targets.length === 0) return;
+
+        // 代表のメタデータ（最新の日付・シーズン・ガチャ種別）を採用
+        const base = targets[0];
+        let totalPulls = 0;
+        let totalKoban = 0;
+        let totalTickets = 0;
+        let totalStar4 = 0;
+        let totalStar3 = 0;
+        const mergedStar5List = [];
+        const memos = [];
+
+        targets.forEach(t => {
+          totalPulls += (t.pulls || 0);
+          totalKoban += (t.koban || 0);
+          totalTickets += (t.tickets || 0);
+          totalStar4 += (t.star4Count || 0);
+          totalStar3 += (t.star3Count || 0);
+          if (Array.isArray(t.star5List)) {
+            mergedStar5List.push(...t.star5List);
+          }
+          if (t.memo && t.memo.trim()) {
+            memos.push(t.memo.trim());
+          }
+        });
+
+        const mergedRecord = {
+          id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+          date: base.date,
+          season: base.season,
+          gachaType: base.gachaType,
+          pulls: totalPulls,
+          koban: totalKoban,
+          tickets: totalTickets,
+          star4Count: totalStar4,
+          star3Count: totalStar3,
+          star5List: mergedStar5List,
+          memo: memos.length > 0 ? memos.join(" / ") : `${targets.length}回分結合`,
+          createdAt: base.createdAt || Date.now()
+        };
+
+        // 元の履歴を削除し、結合した履歴を挿入
+        state.history = state.history.filter(h => !selectedIds.has(h.id));
+        state.history.unshift(mergedRecord);
+
+        // 日付・作成日時順で整理
+        state.history.sort((a, b) => {
+          const da = new Date(b.date).getTime();
+          const db = new Date(a.date).getTime();
+          if (da !== db) return da - db;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+
+        saveStorageData();
+        renderAll();
+
+        // チェックボックス全解除
+        const selectAll = document.getElementById("selectAllCheckbox");
+        if (selectAll) selectAll.checked = false;
+
+        showToast(`${targets.length} 件の履歴を1件（${totalPulls}連分）に結合しました！`, "gold");
+      });
+    }
+
+    function deleteSelectedHistories() {
+      const checkedBoxes = document.querySelectorAll(".history-row-check:checked");
+      if (checkedBoxes.length === 0) {
+        showToast("削除する履歴を選択してください", "red");
+        return;
+      }
+
+      showConfirmDialog("選択削除", `選択した ${checkedBoxes.length} 件の履歴を削除しますか？`, () => {
+        const idsToDelete = new Set(Array.from(checkedBoxes).map(cb => cb.value));
+        state.history = state.history.filter(h => !idsToDelete.has(h.id));
+        saveStorageData();
+        renderAll();
+        showToast(`${idsToDelete.size} 件の履歴を削除しました`, "red");
+      });
+    }
+
+    function deleteAllHistories() {
+      showConfirmDialog("全履歴消去", "すべての登用履歴を消去しますか？この操作は取り消せません。", () => {
+        state.history = [];
+        saveStorageData();
+        renderAll();
+        showToast("全履歴を消去しました", "red");
+      });
+    }
+
+    /* ---------------------------------------------------------
+       履歴の編集
+       --------------------------------------------------------- */
+    function addEditStar5Row(name = "", tier = "高排出", order = "") {
+      const container = document.getElementById("editStar5Container");
+      const row = document.createElement("div");
+      row.className = "flex items-center gap-1.5 edit-s5-row";
+
+      let optionsHtml = star5Master.map(m => `<option value="${m.name}" ${m.name === name ? 'selected' : ''}>${m.name}</option>`).join("");
+      optionsHtml += `<option value="その他" ${name && !star5Master.some(m => m.name === name) ? 'selected' : ''}>その他 (直接入力)</option>`;
+
+      const isOther = name && !star5Master.some(m => m.name === name);
+
+      let orderOptions = `<option value="">何番目？</option>`;
+      for (let i = 1; i <= 5; i++) {
+        orderOptions += `<option value="${i}" ${order == i ? 'selected' : ''}>${i}番目</option>`;
+      }
+
+      row.innerHTML = `
+        <select class="edit-s5-order bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-xs text-amber-300">
+          ${orderOptions}
+        </select>
+        <select class="edit-s5-select flex-1 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
+          <option value="">武将を選択...</option>
+          ${optionsHtml}
+        </select>
+        <input type="text" placeholder="武将名" value="${name}" class="edit-s5-custom ${isOther ? '' : 'hidden'} w-24 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
+        <select class="edit-s5-tier bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-xs text-amber-300 font-bold">
+          <option value="高排出" ${tier === '高排出' ? 'selected' : ''}>高排出</option>
+          <option value="低排出" ${tier === '低排出' ? 'selected' : ''}>低排出</option>
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" class="text-stone-500 hover:text-red-400 p-1">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      `;
+
+      const sel = row.querySelector(".edit-s5-select");
+      const custom = row.querySelector(".edit-s5-custom");
+      const tierEl = row.querySelector(".edit-s5-tier");
+
+      sel.addEventListener("change", (e) => {
+        if (e.target.value === "その他") {
+          custom.classList.remove("hidden");
+          custom.focus();
+        } else {
+          custom.classList.add("hidden");
+          const found = star5Master.find(m => m.name === e.target.value);
+          if (found) tierEl.value = found.tier;
+        }
+      });
+
+      container.appendChild(row);
+    }
+
+    function openEditHistoryModal(id) {
+      const item = state.history.find(h => h.id === id);
+      if (!item) return;
+
+      document.getElementById("editEntryId").value = item.id;
+      document.getElementById("editDate").value = item.date;
+      document.getElementById("editSeason").value = item.season;
+      document.getElementById("editKoban").value = item.koban || 0;
+      document.getElementById("editTickets").value = item.tickets || 0;
+      document.getElementById("editMemo").value = item.memo || "";
+
+      const s5Container = document.getElementById("editStar5Container");
+      s5Container.innerHTML = "";
+      if (Array.isArray(item.star5List) && item.star5List.length > 0) {
+        item.star5List.forEach(s => addEditStar5Row(s.name, s.tier, s.order || ""));
+      }
+
+      document.getElementById("editHistoryModal").classList.remove("hidden");
+    }
+
+    function saveEditedHistory() {
+      const id = document.getElementById("editEntryId").value;
+      const item = state.history.find(h => h.id === id);
+      if (!item) return;
+
+      item.date = document.getElementById("editDate").value;
+      item.season = document.getElementById("editSeason").value;
+      item.koban = parseInt(document.getElementById("editKoban").value) || 0;
+      item.tickets = parseInt(document.getElementById("editTickets").value) || 0;
+      item.memo = document.getElementById("editMemo").value.trim();
+
+      // ★5武将リストの再取得
+      const rows = document.querySelectorAll(".edit-s5-row");
+      const updatedList = [];
+      rows.forEach(r => {
+        const sel = r.querySelector(".edit-s5-select");
+        const custom = r.querySelector(".edit-s5-custom");
+        const tier = r.querySelector(".edit-s5-tier").value;
+        const ord = r.querySelector(".edit-s5-order").value;
+        let name = sel.value === "その他" ? custom.value.trim() : sel.value;
+        if (!name && custom.value.trim()) name = custom.value.trim();
+        if (name) {
+          updatedList.push({ name, tier, order: ord ? parseInt(ord) : null });
+        }
+      });
+      item.star5List = updatedList;
+
+      saveStorageData();
+      renderAll();
+      document.getElementById("editHistoryModal").classList.add("hidden");
+      showToast("履歴を更新しました", "gold");
+    }
+
+    /* ---------------------------------------------------------
+       課金管理テーブル
+       --------------------------------------------------------- */
+    function renderBillingTable() {
+      const tbody = document.getElementById("billingTableBody");
+      const selectedSeason = document.getElementById("globalSeasonFilter").value;
+      tbody.innerHTML = "";
+
+      let list = state.billing;
+      if (selectedSeason !== "ALL") list = list.filter(b => b.season === selectedSeason);
+
+      const total = list.reduce((sum, b) => sum + (b.amount || 0), 0);
+      document.getElementById("totalBilledDisplay").textContent = "¥" + total.toLocaleString();
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-stone-500">課金記録はありません</td></tr>`;
+        return;
+      }
+
+      list.forEach(b => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-stone-900/60";
+        tr.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">${escapeHtml(b.date)}</td>
+          <td class="py-2 px-3 font-bold text-amber-400">${escapeHtml(b.season)}</td>
+          <td class="py-2 px-3 text-right font-bold text-emerald-400">¥${(b.amount || 0).toLocaleString()}</td>
+          <td class="py-2 px-3 text-stone-400">${escapeHtml(b.memo || '-')}</td>
+          <td class="py-2 px-3 text-center">
+            <button onclick="deleteBilling('${b.id}')" class="text-stone-500 hover:text-red-400 p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function deleteBilling(id) {
+      showConfirmDialog("課金記録の削除", "この課金記録を削除しますか？", () => {
+        state.billing = state.billing.filter(b => b.id !== id);
+        saveStorageData();
+        renderBillingTable();
+        renderAll();
+        showToast("課金記録を削除しました", "red");
+      });
+    }
+
+    /* ---------------------------------------------------------
+       武将別排出ランキング & 凸数
+       --------------------------------------------------------- */
+    function renderOfficerRanking() {
+      const container = document.getElementById("officerRankingList");
+      container.innerHTML = "";
+
+      const counts = {};
+      const tiers = {};
+
+      state.history.forEach(h => {
+        if (Array.isArray(h.star5List)) {
+          h.star5List.forEach(s => {
+            counts[s.name] = (counts[s.name] || 0) + 1;
+            tiers[s.name] = s.tier;
+          });
+        }
+      });
+
+      const list = Object.keys(counts).map(name => ({
+        name: name,
+        count: counts[name],
+        tier: tiers[name] || "高排出"
+      })).sort((a, b) => b.count - a.count);
+
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-stone-500 py-3 text-center">排出された★5武将はまだありません</p>`;
+        return;
+      }
+
+      list.forEach(o => {
+        const totsuCount = Math.max(0, o.count - 1);
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between p-2 rounded-lg bg-stone-900 border border-stone-800";
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-stone-100">${escapeHtml(o.name)}</span>
+            <span class="text-[9px] px-1.5 py-0.2 rounded font-bold ${o.tier === '低排出' ? 'bg-rose-900/60 text-rose-300 border border-rose-700/50' : 'bg-sky-900/60 text-sky-300 border border-sky-700/50'}">${escapeHtml(o.tier)}</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-extrabold text-amber-300">${o.count} 体</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded ${totsuCount >= 5 ? 'bg-red-800 text-white font-bold' : totsuCount > 0 ? 'bg-amber-800/80 text-amber-200 font-bold' : 'bg-stone-800 text-stone-400'}">
+              ${totsuCount === 0 ? '無凸' : totsuCount >= 5 ? '完凸(5凸)' : `${totsuCount}凸`}
+            </span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    /* ---------------------------------------------------------
+       Chart.js グラフ分析 (縦軸調整対応)
+       --------------------------------------------------------- */
+    function renderCharts() {
+      const metric = document.getElementById("chartMetricSelect").value;
+      const ctx = document.getElementById("analysisChart").getContext("2d");
+
+      // 日付順ソート (過去順)
+      const sorted = [...state.history].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const labels = [];
+      const dataPoints = [];
+
+      let runningPulls = 0;
+      let running5 = 0;
+
+      sorted.forEach(item => {
+        labels.push(item.date);
+        runningPulls += (item.pulls || 0);
+        if (item.star5List) running5 += item.star5List.length;
+
+        if (metric === "rate") {
+          const rate = runningPulls > 0 ? ((running5 / runningPulls) * 100).toFixed(2) : 0;
+          dataPoints.push(parseFloat(rate));
+        } else if (metric === "pulls") {
+          dataPoints.push(item.pulls || 0);
+        } else if (metric === "koban") {
+          dataPoints.push(item.koban || 0);
+        }
+      });
+
+      if (chartInstance) chartInstance.destroy();
+
+      const labelMap = {
+        rate: "★5 累積排出率 (%)",
+        pulls: "ガチャ実行回数",
+        koban: "小判消費量"
+      };
+
+      const yAxisConfig = {
+        grid: { color: "rgba(255,255,255,0.06)" },
+        ticks: { color: "#a8a29e" }
+      };
+
+      if (customChartYMax !== null && !isNaN(customChartYMax)) {
+        yAxisConfig.max = customChartYMax;
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: metric === "rate" ? "line" : "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: labelMap[metric],
+            data: dataPoints,
+            borderColor: metric === "rate" ? "#d4af37" : "#3b82f6",
+            backgroundColor: metric === "rate" ? "rgba(212,175,55,0.15)" : "rgba(59,130,246,0.3)",
+            fill: true,
+            tension: 0.25,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: "#d6d3d1" } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "#a8a29e", maxTicksLimit: 8 } },
+            y: yAxisConfig
+          }
+        }
+      });
+
+      // ドーナツグラフ (高排出 / 低排出)
+      renderPieChart();
+    }
+
+    function renderPieChart() {
+      const pieCtx = document.getElementById("distributionPieChart").getContext("2d");
+      let high = 0;
+      let low = 0;
+
+      state.history.forEach(h => {
+        if (Array.isArray(h.star5List)) {
+          h.star5List.forEach(s => {
+            if (s.tier === "高排出") high++;
+            if (s.tier === "低排出") low++;
+          });
+        }
+      });
+
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      pieChartInstance = new Chart(pieCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["高排出", "低排出"],
+          datasets: [{
+            data: [high, low],
+            backgroundColor: ["#38bdf8", "#fb7185"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { color: "#d6d3d1", boxWidth: 12, padding: 15 }
+            }
+          }
+        }
+      });
+    }
+
+    /* ---------------------------------------------------------
+       ★5 排出武将 入力行管理
+       --------------------------------------------------------- */
+    function addStar5EntryRow(initialName = "", initialTier = "高排出", canDelete = true, initialOrder = "") {
+      const container = document.getElementById("star5EntriesList");
+      const rowId = "s5row_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
+
+      const div = document.createElement("div");
+      div.id = rowId;
+      div.className = "star5-entry-row flex flex-wrap items-center gap-2 bg-stone-900 p-2.5 rounded-lg border border-amber-500/40 animate-fade-in";
+
+      let optionsHtml = `<option value="none">★5なし (排出なし)</option>`;
+      optionsHtml += star5Master.map(m => `<option value="${m.name}" ${m.name === initialName ? 'selected' : ''}>${m.name} (${m.tier})</option>`).join("");
+      optionsHtml += `<option value="その他">その他 (直接入力・マスター自動登録)</option>`;
+
+      // 5連ガチャ等の排出順指定セレクト（1〜5番目）
+      let orderOptionsHtml = `<option value="">順番 (任意)</option>`;
+      for (let i = 1; i <= 5; i++) {
+        orderOptionsHtml += `<option value="${i}" ${initialOrder == i ? 'selected' : ''}>${i}番目に出た</option>`;
+      }
+
+      const deleteBtnHtml = canDelete ? `
+        <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-stone-500 hover:text-red-400 p-1 text-xs" title="枠を削除">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      ` : `
+        <button type="button" onclick="resetSingleStar5Row('${rowId}')" class="text-stone-500 hover:text-amber-400 p-1 text-xs" title="クリア">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
+      `;
+
+      div.innerHTML = `
+        <span class="text-xs font-bold text-amber-400 whitespace-nowrap">★5</span>
+        <select class="s5-order bg-stone-950 border border-stone-700 rounded px-1.5 py-1 text-xs text-amber-300 font-mono" title="5連登用での排出順">
+          ${orderOptionsHtml}
+        </select>
+        <select class="s5-select flex-1 bg-stone-950 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
+          ${optionsHtml}
+        </select>
+        <input type="text" placeholder="武将名を入力" value="${initialName}" class="s5-custom-name hidden w-28 bg-stone-950 border border-amber-500 rounded px-2 py-1 text-xs text-stone-100">
+        <select class="s5-tier bg-stone-950 border border-stone-700 rounded px-2 py-1 text-xs text-amber-300 font-bold">
+          <option value="高排出" ${initialTier === '高排出' ? 'selected' : ''}>高排出</option>
+          <option value="低排出" ${initialTier === '低排出' ? 'selected' : ''}>低排出</option>
+        </select>
+        ${deleteBtnHtml}
+      `;
+
+      const selectEl = div.querySelector(".s5-select");
+      const customInput = div.querySelector(".s5-custom-name");
+      const tierEl = div.querySelector(".s5-tier");
+
+      selectEl.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val === "その他") {
+          customInput.classList.remove("hidden");
+          customInput.focus();
+        } else {
+          customInput.classList.add("hidden");
+          const found = star5Master.find(m => m.name === val);
+          if (found) tierEl.value = found.tier;
+        }
+      });
+
+      container.appendChild(div);
+    }
+
+    function resetSingleStar5Row(rowId) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      const select = row.querySelector(".s5-select");
+      const custom = row.querySelector(".s5-custom-name");
+      if (select) select.value = "none";
+      if (custom) {
+        custom.value = "";
+        custom.classList.add("hidden");
+      }
+    }
+
+    function adjustCount(id, delta) {
+      const el = document.getElementById(id);
+      let v = parseInt(el.value) || 0;
+      v = Math.max(0, v + delta);
+      el.value = v;
+    }
+
+    /* ---------------------------------------------------------
+       ★5武将マスター管理モーダル ロジック
+       --------------------------------------------------------- */
+    function openMasterModal() {
+      renderMasterList();
+      document.getElementById("masterModal").classList.remove("hidden");
+    }
+
+    function renderMasterList() {
+      const container = document.getElementById("masterOfficersList");
+      container.innerHTML = "";
+
+      star5Master.forEach((officer, index) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between p-2 rounded-lg bg-stone-950 border border-stone-800 text-xs";
+        
+        const isFirst = index === 0;
+        const isLast = index === star5Master.length - 1;
+
+        item.innerHTML = `
+          <!-- 上下移動ボタン -->
+          <div class="flex flex-col mr-2 -space-y-0.5">
+            <button onclick="moveMasterOfficer(${index}, -1)" ${isFirst ? 'disabled class="opacity-20 cursor-not-allowed"' : 'class="hover:text-amber-400"'} title="上へ移動">
+              <i class="fa-solid fa-caret-up text-[13px]"></i>
+            </button>
+            <button onclick="moveMasterOfficer(${index}, 1)" ${isLast ? 'disabled class="opacity-20 cursor-not-allowed"' : 'class="hover:text-amber-400"'} title="下へ移動">
+              <i class="fa-solid fa-caret-down text-[13px]"></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-1.5 flex-1 mr-2 min-w-0">
+            <span class="font-bold text-stone-100 truncate" id="masterNameSpan_${index}">${escapeHtml(officer.name)}</span>
+            <button onclick="promptEditMasterName(${index})" class="text-stone-500 hover:text-amber-400 p-1 flex-shrink-0" title="武将名を変更">
+              <i class="fa-solid fa-pen text-[11px]"></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <select onchange="updateMasterTier(${index}, this.value)" class="bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs ${officer.tier === '低排出' ? 'text-rose-400' : 'text-sky-300'} font-bold">
+              <option value="高排出" ${officer.tier === '高排出' ? 'selected' : ''}>高排出</option>
+              <option value="低排出" ${officer.tier === '低排出' ? 'selected' : ''}>低排出</option>
+            </select>
+            <button onclick="deleteMasterOfficer(${index})" class="text-stone-500 hover:text-red-400 p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    /* ---------------------------------------------------------
+       武将マスター 並び替えロジック
+       --------------------------------------------------------- */
+    function moveMasterOfficer(index, delta) {
+      const targetIndex = index + delta;
+      if (targetIndex < 0 || targetIndex >= star5Master.length) return;
+
+      // 配列要素を入れ替え
+      const temp = star5Master[index];
+      star5Master[index] = star5Master[targetIndex];
+      star5Master[targetIndex] = temp;
+
+      saveMasterData();
+      renderMasterList();
+      // 入力フォーム側のセレクトボックス候補順も連動更新
+      initStar5DefaultEntry();
+    }
+
+    function sortMasterOfficers(mode) {
+      if (mode === 'kana') {
+        // 日本語五十音（ロケール）順
+        star5Master.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+        showToast("武将を五十音順に整列しました", "gold");
+      } else if (mode === 'tier') {
+        // 低排出（希少枠）を優先し、同じ区分内は五十音順
+        star5Master.sort((a, b) => {
+          if (a.tier === b.tier) {
+            return a.name.localeCompare(b.name, 'ja');
+          }
+          return a.tier === '低排出' ? -1 : 1;
+        });
+        showToast("武将を排出区分順に整列しました", "gold");
+      }
+
+      saveMasterData();
+      renderMasterList();
+      initStar5DefaultEntry();
+    }
+
+    function promptEditMasterName(index) {
+      const target = star5Master[index];
+      if (!target) return;
+
+      const span = document.getElementById(`masterNameSpan_${index}`);
+      if (!span) return;
+
+      // インライン入力フォームに一時切り替え
+      const parent = span.parentElement;
+      const currentName = target.name;
+      parent.innerHTML = `
+        <input type="text" id="inlineEditName_${index}" value="${escapeHtml(currentName)}" class="bg-stone-900 border border-amber-500 rounded px-1.5 py-0.5 text-xs text-stone-100 w-32 focus:outline-none">
+        <button onclick="saveMasterNameChange(${index})" class="text-amber-400 hover:text-amber-300 px-1 py-0.5 font-bold"><i class="fa-solid fa-check"></i></button>
+        <button onclick="renderMasterList()" class="text-stone-500 hover:text-stone-300 px-1 py-0.5"><i class="fa-solid fa-xmark"></i></button>
+      `;
+      const input = document.getElementById(`inlineEditName_${index}`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function saveMasterNameChange(index) {
+      const input = document.getElementById(`inlineEditName_${index}`);
+      if (!input) return;
+      const newName = input.value.trim();
+      const oldName = star5Master[index].name;
+
+      if (!newName) {
+        showToast("武将名を入力してください", "red");
+        return;
+      }
+
+      if (newName === oldName) {
+        renderMasterList();
+        return;
+      }
+
+      star5Master[index].name = newName;
+      saveMasterData();
+
+      // 過去の登録履歴内の同名武将も一括置換
+      let replacedCount = 0;
+      state.history.forEach(h => {
+        if (Array.isArray(h.star5List)) {
+          h.star5List.forEach(s => {
+            if (s.name === oldName) {
+              s.name = newName;
+              replacedCount++;
+            }
+          });
+        }
+      });
+
+      if (replacedCount > 0) {
+        saveStorageData();
+      }
+
+      renderMasterList();
+      renderAll();
+      showToast(`「${oldName}」を「${newName}」に変更しました（履歴反映: ${replacedCount}件）`, "gold");
+    }
+
+    function addMasterOfficer() {
+      const nameInput = document.getElementById("newMasterName");
+      const tierSelect = document.getElementById("newMasterTier");
+      const name = nameInput.value.trim();
+      const tier = tierSelect.value;
+
+      if (!name) {
+        showToast("武将名を入力してください", "red");
+        return;
+      }
+
+      if (star5Master.some(m => m.name === name)) {
+        showToast("その武将は既に登録されています", "red");
+        return;
+      }
+
+      star5Master.unshift({ name, tier });
+      saveMasterData();
+      renderMasterList();
+      nameInput.value = "";
+      showToast(`${name} をマスターに追加しました`, "gold");
+    }
+
+    function updateMasterTier(index, newTier) {
+      if (star5Master[index]) {
+        star5Master[index].tier = newTier;
+        saveMasterData();
+        renderMasterList();
+        showToast("排出区分を更新しました", "blue");
+      }
+    }
+
+    function deleteMasterOfficer(index) {
+      const removed = star5Master.splice(index, 1);
+      saveMasterData();
+      renderMasterList();
+      showToast(`${removed[0].name} を削除しました`, "red");
+    }
+
+    function resetMasterToDefault() {
+      showConfirmDialog("マスター初期化", "武将マスターを初期の標準セットに戻しますか？", () => {
+        star5Master = [...DEFAULT_STAR5_MASTER];
+        saveMasterData();
+        renderMasterList();
+        showToast("初期データにリセットしました", "gold");
+      });
+    }
+
+    /* ---------------------------------------------------------
+       データ管理 & バックアップ復元 (外部クラウド不要)
+       --------------------------------------------------------- */
+    function openSettingsModal() {
+      document.getElementById("settingsModal").classList.remove("hidden");
+    }
+
+    function exportJsonBackup() {
+      // 履歴・課金だけでなく、カスタマイズした武将マスターも含めて書き出す
+      const exportData = {
+        history: state.history,
+        billing: state.billing,
+        star5Master: star5Master
+      };
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `shinsen_gacha_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("武将マスターを含むバックアップデータを書き出しました", "gold");
+    }
+
+    function importJsonBackup(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (Array.isArray(parsed.history)) {
+            // IDベースでマージ（既存の履歴も消さずに合体）
+            const historyMap = new Map();
+            state.history.forEach(item => historyMap.set(item.id, item));
+            parsed.history.forEach(item => historyMap.set(item.id, item));
+            state.history = Array.from(historyMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (Array.isArray(parsed.billing)) {
+              const billingMap = new Map();
+              state.billing.forEach(b => billingMap.set(b.id, b));
+              parsed.billing.forEach(b => billingMap.set(b.id, b));
+              state.billing = Array.from(billingMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+
+            // バックアップに武将マスターが含まれている場合はマスターも合体・反映
+            if (Array.isArray(parsed.star5Master) && parsed.star5Master.length > 0) {
+              const masterMap = new Map();
+              star5Master.forEach(m => masterMap.set(m.name, m));
+              parsed.star5Master.forEach(m => masterMap.set(m.name, m));
+              star5Master = Array.from(masterMap.values());
+              saveMasterData();
+            }
+
+            saveStorageData();
+            renderAll();
+            showToast("武将マスターと履歴データを正常に取り込みました！", "gold");
+            document.getElementById("settingsModal").classList.add("hidden");
+          } else {
+            throw new Error("無効なフォーマットです");
+          }
+        } catch (err) {
+          showToast("復元エラー: 正しいバックアップファイルではありません", "red");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    }
+
+    /* ---------------------------------------------------------
+       シミュレーターロジック (公称5.6% + 30連天井)
+       --------------------------------------------------------- */
+    function runSimulator(count = 1) {
+      const grid = document.getElementById("simResultsGrid");
+      grid.innerHTML = "";
+
+      for (let i = 0; i < count; i++) {
+        simState.pulls++;
+        simState.pity++;
+        simState.koban += (count === 5 ? 948 / 5 : 198);
+
+        const isPity = simState.pity >= 30;
+        const rand = Math.random() * 100;
+
+        let cardRarity = 3;
+        let cardName = "足軽";
+        let tier = "";
+
+        if (isPity || rand < 5.6) {
+          cardRarity = 5;
+          simState.count5++;
+          simState.pity = 0; // 天井リセット
+          const pick = star5Master[Math.floor(Math.random() * star5Master.length)] || DEFAULT_STAR5_MASTER[0];
+          cardName = pick.name;
+          tier = pick.tier;
+        } else if (rand < 41.6) {
+          cardRarity = 4;
+          cardName = "良将武将";
+        }
+
+        const el = document.createElement("div");
+        el.className = `p-2.5 rounded-lg text-center min-w-[85px] border ${
+          cardRarity === 5 
+            ? 'bg-amber-950/50 border-amber-500 text-amber-300 font-bold shadow-lg animate-pulse' 
+            : cardRarity === 4 
+            ? 'bg-purple-950/40 border-purple-600 text-purple-300' 
+            : 'bg-stone-900 border-stone-800 text-stone-400 text-xs'
+        }`;
+        el.innerHTML = `
+          <div class="text-[10px] mb-0.5">${cardRarity === 5 ? '★★★★★' : cardRarity === 4 ? '★★★★' : '★★★'}</div>
+          <div class="text-xs truncate">${cardName}</div>
+          ${tier ? `<span class="text-[9px] px-1 rounded bg-stone-900 text-stone-300 block mt-1">${tier}</span>` : ''}
+        `;
+        grid.appendChild(el);
+      }
+
+      // シミュ統計更新
+      document.getElementById("simStatPulls").textContent = simState.pulls;
+      document.getElementById("simStatKoban").textContent = Math.round(simState.koban).toLocaleString();
+      document.getElementById("simStatCount5").textContent = simState.count5;
+      const rate = simState.pulls > 0 ? ((simState.count5 / simState.pulls) * 100).toFixed(2) : "0.00";
+      document.getElementById("simStatRate5").textContent = rate + "%";
+      document.getElementById("simPityRemaining").textContent = 30 - simState.pity;
+    }
+
+    function resetSimulator() {
+      simState = { pity: 0, pulls: 0, koban: 0, count5: 0 };
+      document.getElementById("simResultsGrid").innerHTML = '<p class="text-xs text-stone-500">リセットしました。登用を実行してください。</p>';
+      document.getElementById("simStatPulls").textContent = "0";
+      document.getElementById("simStatKoban").textContent = "0";
+      document.getElementById("simStatCount5").textContent = "0";
+      document.getElementById("simStatRate5").textContent = "0.0%";
+      document.getElementById("simPityRemaining").textContent = "30";
+    }
+
+    /* ---------------------------------------------------------
+       トースト通知 & 確認ダイアログ (alert/confirm禁止ルール)
+       --------------------------------------------------------- */
+    function showToast(msg, type = "blue") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type === 'gold' ? 'gold' : type === 'red' ? 'red' : ''}`;
+      toast.textContent = msg;
+
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add("show"), 10);
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    function showConfirmDialog(title, message, onConfirm) {
+      const dialog = document.getElementById("confirmDialog");
+      document.getElementById("confirmDialogTitle").textContent = title;
+      document.getElementById("confirmDialogMessage").textContent = message;
+
+      const okBtn = document.getElementById("confirmOkBtn");
+      const cancelBtn = document.getElementById("confirmCancelBtn");
+
+      const handleOk = () => {
+        dialog.classList.add("hidden");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+        if (onConfirm) onConfirm();
+      };
+
+      const handleCancel = () => {
+        dialog.classList.add("hidden");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+      };
+
+      okBtn.addEventListener("click", handleOk);
+      cancelBtn.addEventListener("click", handleCancel);
+
+      dialog.classList.remove("hidden");
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
