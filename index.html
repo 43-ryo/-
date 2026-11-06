@@ -1533,11 +1533,6 @@
       const row = document.createElement("div");
       row.className = "flex items-center gap-1.5 edit-s5-row";
 
-      let optionsHtml = star5Master.map(m => `<option value="${m.name}" ${m.name === name ? 'selected' : ''}>${m.name}</option>`).join("");
-      optionsHtml += `<option value="その他" ${name && !star5Master.some(m => m.name === name) ? 'selected' : ''}>その他 (直接入力)</option>`;
-
-      const isOther = name && !star5Master.some(m => m.name === name);
-
       let orderOptions = `<option value="">何番目？</option>`;
       for (let i = 1; i <= 5; i++) {
         orderOptions += `<option value="${i}" ${order == i ? 'selected' : ''}>${i}番目</option>`;
@@ -1547,11 +1542,8 @@
         <select class="edit-s5-order bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-xs text-amber-300">
           ${orderOptions}
         </select>
-        <select class="edit-s5-select flex-1 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
-          <option value="">武将を選択...</option>
-          ${optionsHtml}
-        </select>
-        <input type="text" placeholder="武将名" value="${name}" class="edit-s5-custom ${isOther ? '' : 'hidden'} w-24 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
+        <select class="edit-s5-select flex-1 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100"></select>
+        <input type="text" placeholder="武将名" value="${name}" class="edit-s5-custom hidden w-24 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
         <select class="edit-s5-tier bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-xs text-amber-300 font-bold">
           <option value="高排出" ${tier === '高排出' ? 'selected' : ''}>高排出</option>
           <option value="低排出" ${tier === '低排出' ? 'selected' : ''}>低排出</option>
@@ -1565,6 +1557,26 @@
       const custom = row.querySelector(".edit-s5-custom");
       const tierEl = row.querySelector(".edit-s5-tier");
 
+      // 区分に応じた選択肢再生成
+      function refreshOptions(selectedVal) {
+        const curTier = tierEl.value;
+        const filtered = star5Master.filter(m => m.tier === curTier);
+        let html = `<option value="">武将を選択...</option>`;
+        filtered.forEach(m => {
+          html += `<option value="${m.name}" ${m.name === selectedVal ? 'selected' : ''}>${m.name}</option>`;
+        });
+        html += `<option value="その他" ${selectedVal === "その他" || (selectedVal && !star5Master.some(m => m.name === selectedVal)) ? 'selected' : ''}>その他 (直接入力)</option>`;
+        sel.innerHTML = html;
+
+        if (sel.value === "その他" || (selectedVal && !filtered.some(m => m.name === selectedVal) && selectedVal !== "")) {
+          custom.classList.remove("hidden");
+        } else {
+          custom.classList.add("hidden");
+        }
+      }
+
+      refreshOptions(name);
+
       sel.addEventListener("change", (e) => {
         if (e.target.value === "その他") {
           custom.classList.remove("hidden");
@@ -1572,8 +1584,15 @@
         } else {
           custom.classList.add("hidden");
           const found = star5Master.find(m => m.name === e.target.value);
-          if (found) tierEl.value = found.tier;
+          if (found && found.tier !== tierEl.value) {
+            tierEl.value = found.tier;
+            refreshOptions(found.name);
+          }
         }
+      });
+
+      tierEl.addEventListener("change", () => {
+        refreshOptions("");
       });
 
       container.appendChild(row);
@@ -1855,10 +1874,6 @@
       div.id = rowId;
       div.className = "star5-entry-row flex flex-wrap items-center gap-2 bg-stone-900 p-2.5 rounded-lg border border-amber-500/40";
 
-      let optionsHtml = `<option value="none">★5なし (排出なし)</option>`;
-      optionsHtml += star5Master.map(m => `<option value="${m.name}" ${m.name === initialName ? 'selected' : ''}>${m.name} (${m.tier})</option>`).join("");
-      optionsHtml += `<option value="その他">その他 (直接入力・マスター自動登録)</option>`;
-
       let orderOptionsHtml = `<option value="">順番 (任意)</option>`;
       for (let i = 1; i <= 5; i++) {
         orderOptionsHtml += `<option value="${i}" ${initialOrder == i ? 'selected' : ''}>${i}番目に出た</option>`;
@@ -1879,9 +1894,7 @@
         <select class="s5-order bg-stone-950 border border-stone-700 rounded px-1.5 py-1 text-xs text-amber-300 font-mono" title="5連登用での排出順">
           ${orderOptionsHtml}
         </select>
-        <select class="s5-select flex-1 bg-stone-950 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100">
-          ${optionsHtml}
-        </select>
+        <select class="s5-select flex-1 bg-stone-950 border border-stone-700 rounded px-2 py-1 text-xs text-stone-100"></select>
         <input type="text" placeholder="武将名を入力" value="${initialName}" class="s5-custom-name hidden w-28 bg-stone-950 border border-amber-500 rounded px-2 py-1 text-xs text-stone-100">
         <select class="s5-tier bg-stone-950 border border-stone-700 rounded px-2 py-1 text-xs text-amber-300 font-bold">
           <option value="高排出" ${initialTier === '高排出' ? 'selected' : ''}>高排出</option>
@@ -1894,6 +1907,36 @@
       const customInput = div.querySelector(".s5-custom-name");
       const tierEl = div.querySelector(".s5-tier");
 
+      // 右側の排出区分（高排出／低排出）に応じて、左側のドロップダウンの武将を絞り込む関数
+      function populateOfficerOptions(selectedVal) {
+        const curTier = tierEl.value;
+        const filteredOfficers = star5Master.filter(m => m.tier === curTier);
+
+        let html = `<option value="none">★5なし (排出なし)</option>`;
+        filteredOfficers.forEach(m => {
+          html += `<option value="${m.name}" ${m.name === selectedVal ? 'selected' : ''}>${m.name} (${m.tier})</option>`;
+        });
+        html += `<option value="その他" ${selectedVal === "その他" ? 'selected' : ''}>その他 (直接入力・マスター自動登録)</option>`;
+
+        selectEl.innerHTML = html;
+
+        if (selectedVal && filteredOfficers.some(m => m.name === selectedVal)) {
+          selectEl.value = selectedVal;
+          customInput.classList.add("hidden");
+        } else if (selectedVal === "その他" || (selectedVal && selectedVal !== "none")) {
+          selectEl.value = "その他";
+          customInput.classList.remove("hidden");
+          customInput.value = selectedVal;
+        } else {
+          selectEl.value = "none";
+          customInput.classList.add("hidden");
+        }
+      }
+
+      // 初期生成
+      populateOfficerOptions(initialName);
+
+      // 武将ドロップダウン変更時
       selectEl.addEventListener("change", (e) => {
         const val = e.target.value;
         if (val === "その他") {
@@ -1902,8 +1945,16 @@
         } else {
           customInput.classList.add("hidden");
           const found = star5Master.find(m => m.name === val);
-          if (found) tierEl.value = found.tier;
+          if (found && found.tier !== tierEl.value) {
+            tierEl.value = found.tier;
+            populateOfficerOptions(found.name);
+          }
         }
+      });
+
+      // 排出区分（高排出/低排出）変更時に左側をフィルター
+      tierEl.addEventListener("change", () => {
+        populateOfficerOptions("none");
       });
 
       container.appendChild(div);
